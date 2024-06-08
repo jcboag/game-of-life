@@ -3,12 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conway's Game Of Life Implementation</title>
+    <title>John Conway's Game Of Life</title>
 </head>
 <body>
+
     <canvas id="gameOfLifeGrid" width="1000" height="1000" style="border:1px solid #000000;"></canvas>
+    <div id="playback">
+        <button id="startStop">Start</button>
+        <button id="rewind">Back</button>
+        <button id="forward">Forward</button>
+        <button id="reset">Reset</button>
+    </div>
+
     <script src="src/js/matrix.js"></script>
     <script src="src/js/grid.js"></script>
     <script src="src/js/gameOfLife.js"></script>
+    <script src="src/js/main.js"></script>
+
 </body>
 </html>
