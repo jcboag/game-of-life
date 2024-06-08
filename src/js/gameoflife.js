@@ -58,9 +58,6 @@ class GameOfLife extends Grid {
     constructor(initialState=null) {
         super();
 
-        this.active = false;
-        this.intervalId = null;
-
         if (Matrix.isMatrixLike(initialState)) {
             initialState = initialState;
         } else if (initialState?.matrix && Matrix.isMatrixLike(initialState.matrix)) {
@@ -80,7 +77,6 @@ class GameOfLife extends Grid {
     get currentState(){
         return this._states[this.statePosition];
     }
-
 
     get statePosition() {
         return this._statePosition;
@@ -103,31 +99,4 @@ class GameOfLife extends Grid {
         }
         this.statePosition = this.statePosition + 1
     }
-
-
-    goToState(index) {
-        this.stop(); // Stop if looping
-        this.statePosition = index;
-    }
-
-    start(maxLoop=GLOBALS.DEFAULT_UPDATE_LIMIT) {
-        let count = 0;
-
-        const updateState = () => {
-            if (count >= maxLoop) {
-                clearInterval(this.intervalId);
-                return;
-            }
-            this.incrementState(this.statePosition);
-            this.generateGrid(this.currentState.aliveCells);
-            count++;
-
-        }
-        this.intervalId = setInterval(updateState, 200);
-    }
-
-    stop() { 
-        clearInterval(this.intervalId);
-    }
-
 }
