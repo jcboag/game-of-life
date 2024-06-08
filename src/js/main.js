@@ -1,39 +1,64 @@
 var g = new GameOfLife();
 
+intervalId = null;
+
 const startStopButton = document.querySelector('#startStop');
 const rewindButton = document.querySelector('#rewind');
 const forwardButton = document.querySelector('#forward');
 const resetButton = document.querySelector('#reset')
 
-const start = e => {
-    e.stopPropagation();
-    g.start();
+function startLoop(maxLoop=Infinity) {
+    let count = 0;
+
+    const updateState = () => {
+        if (count >= maxLoop) {
+            stop();
+            return;
+        }
+        g.incrementState(g.statePosition);
+        g.generateGrid(g.currentState.aliveCells);
+        count++;
+    }
+    intervalId = setInterval(updateState, 200);
+}
+
+function stopLoop() { 
+    clearInterval(intervalId);
+    intervalId = null;
+}
+
+function start() {
+    startLoop();
     startStopButton.removeEventListener('click', start);
     startStopButton.addEventListener('click', stop);
     startStopButton.innerText = 'Stop';
 }
 
-const stop = e => {
-    e.stopPropagation();
-    g.stop();
+function stop() {
+    stopLoop();
     startStopButton.removeEventListener('click', stop);
     startStopButton.addEventListener('click', start);
-    console.log(startStopButton);
     startStopButton.innerText = 'Start';
 }
 
-const handleKeyDown = e => {
-    switch(e.code) {
-        case 'ArrowLeft': rewindButton.click(); break;
-        case 'ArrowRight': forwardButton.click(); break;
-        case 'Space': startStopButton.click(); break;
-        default: break;
+function loopInProgress() {
+    return Number.isInteger(intervalId);
+}
+
+
+const toggleStart = _ => {
+    if (loopInProgress()) {
+        stop();
+    } else {
+        start();
     }
 }
 
-const rewind = e => {
-    e.preventDefault();
-    e.stopPropagation();
+const rewind = _ => {
+    if (loopInProgress()) {
+        stop(); 
+        return;
+    }
     try {
         g.statePosition--;
     } catch {
@@ -41,9 +66,11 @@ const rewind = e => {
     }
 }
 
-const forward = e => {
-    e.preventDefault();
-    e.stopPropagation();
+const forward = _ => {
+    if (loopInProgress()) { 
+        stop(); 
+        return; 
+    }
     try {
         g.statePosition++;
     } catch {
@@ -51,16 +78,30 @@ const forward = e => {
     }
 }
 
-const reset = _ => {
-    g = new GameOfLife();
+const keyMap = {
+    ArrowLeft: rewind,
+    ArrowRight: forward,
+    Space: toggleStart,
+}
+
+const handleKeyDown = e => {
+    let action = keyMap[e.code];
+    if (action) {
+        e.preventDefault();
+        e.stopPropagation();
+        action();
+    }
 }
 
 
+const reset = _ => {
+    stop();
+    g = new GameOfLife();
+}
+
 document.addEventListener('keydown', handleKeyDown);
 
-startStopButton.addEventListener('click', start);
-
+startStopButton.onclick = toggleStart;
 rewindButton.onclick = rewind;
 forwardButton.onclick = forward;
 resetButton.onclick = reset;
-
