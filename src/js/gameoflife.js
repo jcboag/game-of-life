@@ -1,5 +1,5 @@
 const GLOBALS = {
-    DEFAULT_GRID_SIZE: 10, // Each 'Game Of Life' Matrix is an nxn grid
+    DEFAULT_GRID_SIZE: 100, // Each 'Game Of Life' Matrix is an nxn grid
     DEFAULT_UPDATE_LIMIT: Infinity,
     DEFAULT_DEAD_TOKEN: " ",
     DEFAULT_ALIVE_TOKEN: "+",
@@ -14,7 +14,8 @@ class GameOfLifeMatrix extends Matrix {
         const state = initialState instanceof Matrix ? initialState.matrix : initialState || GameOfLifeMatrix.randomInitialState(n).matrix;
 
         super(state);
-        this.length = initialState.length;
+
+        this.length = state.length;
 
     }
 
@@ -68,49 +69,65 @@ class GameOfLife extends Grid {
             initialState = GameOfLifeMatrix.randomInitialState(GLOBALS.DEFAULT_GRID_SIZE);
         }
 
+        // Track states for rewinding / forwarding
         initialState = new GameOfLifeMatrix(initialState);
-
-        this.previousState = null;
-        this.currentState = initialState;
+        this._states = [initialState];
+        this._statePosition = 0;
 
         this.init(initialState.matrix.length, initialState.aliveCells);
     }
 
+    get currentState(){
+        return this._states[this.statePosition];
+    }
+
+
+    get statePosition() {
+        return this._statePosition;
+    }
+
+    set statePosition(index) {
+        if ( Number.isNaN(parseInt(index)) || index > this._states.length) throw Error('`set statePosition`: invalid index');
+        else if ( index === this._states.length ) this.incrementState(index-1)
+        else {
+            this._statePosition = index;
+            this.generateGrid(this.currentState.aliveCells);
+        }
+    }
+
+    incrementState() {
+        // Go to the state at given index 
+        if (this.statePosition === (this._states.length-1)) {
+        // Extend the states array with the next state
+            this._states.push(this.currentState.nextState);
+        }
+        this.statePosition = this.statePosition + 1
+    }
+
+
+    goToState(index) {
+        this.stop(); // Stop if looping
+        this.statePosition = index;
+    }
+
     start(maxLoop=GLOBALS.DEFAULT_UPDATE_LIMIT) {
         let count = 0;
+
         const updateState = () => {
             if (count >= maxLoop) {
                 clearInterval(this.intervalId);
                 return;
             }
-            this.previousState = this.currentState;
-            this.currentState = this.currentState.nextState;
+            this.incrementState(this.statePosition);
             this.generateGrid(this.currentState.aliveCells);
             count++;
+
         }
-        this.intervalId = setInterval(updateState, 1000);
+        this.intervalId = setInterval(updateState, 200);
     }
 
     stop() { 
         clearInterval(this.intervalId);
     }
+
 }
-
-function main() {
-    let start = _ => {
-        g.start();
-        document.removeEventListener('click', start);
-        document.addEventListener('click', stop);
-    }
-    let stop = _ => {
-        g.stop();
-        document.removeEventListener('click', stop);
-        document.addEventListener('click', start);
-    }
-
-    let g = new GameOfLife();
-
-    document.addEventListener('click', start);
-}
-
-main();
