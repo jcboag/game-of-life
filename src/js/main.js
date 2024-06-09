@@ -1,27 +1,32 @@
 const DEFAULT_UPDATE_RATE = 150;
 
+var g;
+
 const Playback = {
     init: function() {
         this.intervalId = null;
         this.startStopButton = document.querySelector('#startStop');
         this.rewindButton = document.querySelector('#rewind');
         this.forwardButton = document.querySelector('#forward');
+        this.randomButton = document.querySelector('#random');
         this.resetButton = document.querySelector('#reset');
 
         this.startStopButton.onclick = this.toggleStart.bind(this);
         this.rewindButton.onclick = this.rewind.bind(this);
         this.forwardButton.onclick = this.forward.bind(this);
+        this.randomButton.onclick = this.random.bind(this);
         this.resetButton.onclick = this.reset.bind(this);
     },
     startLoop: function(maxLoop=Infinity,updateRate=DEFAULT_UPDATE_RATE) {
         let count = 0;
+
         const updateState = () => {
             if (count >= maxLoop) {
                 this.stop();
                 return;
             }
             g.incrementState(g.statePosition);
-            g.grid.generateGrid(g.currentState.aliveCells);
+            g.generateGrid(g.currentState.filledCells);
             count++;
         };
         this.intervalId = setInterval(updateState, updateRate);
@@ -76,7 +81,11 @@ const Playback = {
     },
     reset: function() {
         this.stop();
-        g = new GameOfLife();
+        g.statePosition = 0;
+    },
+    random: function() {
+        this.stop();
+        g = new StateGrid(new GameOfLifeMatrix(), gameOfLifeTransition)
     }
 };
 
@@ -89,6 +98,7 @@ const KeyboardShortcuts = {
         ArrowRight: Playback.forward.bind(Playback),
         ArrowUp: Playback.reset.bind(Playback),
         Space: Playback.toggleStart.bind(Playback),
+        KeyL: () => changeGridSize(parseInt(prompt(""))),
     },
     handleKeyDown: function(e) {
         let action = this.keyMap[e.code];
@@ -100,7 +110,27 @@ const KeyboardShortcuts = {
     }
 };
 
-var g = new GameOfLife();
+function getInitialGameOfLifeState() {
+    return new GameOfLifeMatrix();
+}
 
-KeyboardShortcuts.init();
-Playback.init();
+function changeGridSize(size) {
+    if (Number.isInteger(size)) {
+        gameGrid = new Grid(size);
+    }
+}
+
+function gameOfLifeTransition(state) {
+    return state.nextState;
+}
+
+function init() {
+    let initialState = getInitialGameOfLifeState();
+
+    g = new StateGrid(initialState, gameOfLifeTransition);
+
+    KeyboardShortcuts.init();
+    Playback.init();
+}
+
+init();
