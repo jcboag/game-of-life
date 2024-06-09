@@ -1,10 +1,10 @@
 const GLOBALS = {
     DEFAULT_GRID_SIZE: 100, // Each 'Game Of Life' Matrix is an nxn grid
-    DEFAULT_UPDATE_LIMIT: Infinity,
     DEFAULT_DEAD_TOKEN: " ",
     DEFAULT_ALIVE_TOKEN: "+",
 }
 
+// Matrix with only ones and zeros, an algorithm to classify entries, and a transition function.
 class GameOfLifeMatrix extends Matrix {
     static randomInitialState(size) {
         return new Matrix(Matrix.getNullMatrix(size, size)).map(() => Math.random() > 0.5 ? 1 : 0);
@@ -12,11 +12,7 @@ class GameOfLifeMatrix extends Matrix {
 
     constructor(initialState = null, n = GLOBALS.DEFAULT_GRID_SIZE) {
         const state = initialState instanceof Matrix ? initialState.matrix : initialState || GameOfLifeMatrix.randomInitialState(n).matrix;
-
         super(state);
-
-        this.length = state.length;
-
     }
 
     get aliveCells() {
@@ -30,22 +26,23 @@ class GameOfLifeMatrix extends Matrix {
         }
         return alive;
     }
-    isAlive(index) {
-        return this.getItem(index) === 1;
+
+    isAlive(cell) {
+        return this.getItem(cell) === 1;
     }
 
-    isAliveNextState(index) {
-        const isAlive = this.isAlive(index);
-        const aliveNeighbors = this.getAliveNeighbors(index).length;
+    isAliveNextState(cell) {
+        const isAlive = this.isAlive(cell);
+        const aliveNeighbors = this.getAliveNeighbors(cell).length;
         return isAlive ? [2, 3].includes(aliveNeighbors) : aliveNeighbors === 3;
     }
 
-    getAliveNeighbors(index) {
-        return this.adjacentIndices(index).filter(idx => this.isAlive(idx));
+    getAliveNeighbors(cell) {
+        return this.adjacentIndices(cell).filter(idx => this.isAlive(idx));
     }
 
     get nextState() {
-        return new GameOfLifeMatrix(this.map((_, index) => this.isAliveNextState(index) ? 1 : 0));
+        return new GameOfLifeMatrix(this.map((_, cell) => this.isAliveNextState(cell) ? 1 : 0));
     }
 
     // For console based
@@ -54,10 +51,12 @@ class GameOfLifeMatrix extends Matrix {
     }
 }
 
-class GameOfLife extends Grid {
+class GameOfLife {
+    #states;
     constructor(initialState=null) {
-        super();
-
+        // Agnostic about "Grid" implementation
+        this.grid = new Grid();
+        // Generate a random initial state if one isn't given
         if (Matrix.isMatrixLike(initialState)) {
             initialState = initialState;
         } else if (initialState?.matrix && Matrix.isMatrixLike(initialState.matrix)) {
@@ -65,38 +64,42 @@ class GameOfLife extends Grid {
         } else {
             initialState = GameOfLifeMatrix.randomInitialState(GLOBALS.DEFAULT_GRID_SIZE);
         }
-
         // Track states for rewinding / forwarding
         initialState = new GameOfLifeMatrix(initialState);
-        this._states = [initialState];
+        this.#states = [initialState];
         this._statePosition = 0;
 
-        this.init(initialState.matrix.length, initialState.aliveCells);
+        this.grid.init(initialState.matrix.length, initialState.aliveCells);
     }
 
     get currentState(){
-        return this._states[this.statePosition];
+        return this.#states[this.statePosition];
     }
 
+    // statePosition points to the current position with states.
     get statePosition() {
         return this._statePosition;
     }
 
+    // Need to insure statePosition is an integer within range
     set statePosition(index) {
-        if ( Number.isNaN(parseInt(index)) || index > this._states.length) throw Error('`set statePosition`: invalid index');
-        else if ( index === this._states.length ) this.incrementState(index-1)
+        if ( !Number.isInteger(parseInt(index)) || index > this.#states.length) throw Error('`set statePosition`: invalid index');
+        else if ( index === this.#states.length ) this.incrementState()
+        // If it is larger we simply generate the state
         else {
             this._statePosition = index;
-            this.generateGrid(this.currentState.aliveCells);
+            this.grid.generateGrid(this.currentState.aliveCells);
         }
     }
 
+    // If state already exists, the state has been saved, so we can 
+    // just move to it. Otherwise, generate the state
     incrementState() {
         // Go to the state at given index 
-        if (this.statePosition === (this._states.length-1)) {
+        if (this.statePosition === (this.#states.length-1)) {
         // Extend the states array with the next state
-            this._states.push(this.currentState.nextState);
+            this.#states.push(this.currentState.nextState);
         }
-        this.statePosition = this.statePosition + 1
+        this.statePosition++;
     }
 }
