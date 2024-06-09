@@ -10,9 +10,15 @@ class GameOfLifeMatrix extends Matrix {
         return new Matrix(Matrix.getNullMatrix(size, size)).map(() => Math.random() > 0.5 ? 1 : 0);
     }
 
-    constructor(initialState = null, n = GLOBALS.DEFAULT_GRID_SIZE) {
+    // overPopNumber: if the surrounding population is greater than this, the cell dies
+    // underPopNumber: if the surrounding population is less than this, the cell dies
+    constructor(initialState = null, n = GLOBALS.DEFAULT_GRID_SIZE, options={overPopNumber:3,underPopNumber:2}) {
         const state = initialState instanceof Matrix ? initialState.matrix : initialState || GameOfLifeMatrix.randomInitialState(n).matrix;
         super(state);
+
+        this.options = options;
+        this.overPopNumber = options.overPopNumber;
+        this.underPopNumber = options.underPopNumber;
     }
 
     get aliveCells() {
@@ -34,7 +40,7 @@ class GameOfLifeMatrix extends Matrix {
     isAliveNextState(cell) {
         const isAlive = this.isAlive(cell);
         const aliveNeighbors = this.getAliveNeighbors(cell).length;
-        return isAlive ? [2, 3].includes(aliveNeighbors) : aliveNeighbors === 3;
+        return isAlive ? [this.underPopNumber, this.overPopNumber].includes(aliveNeighbors) : aliveNeighbors === this.overPopNumber;
     }
 
     getAliveNeighbors(cell) {
@@ -42,7 +48,7 @@ class GameOfLifeMatrix extends Matrix {
     }
 
     get nextState() {
-        return new GameOfLifeMatrix(this.map((_, cell) => this.isAliveNextState(cell) ? 1 : 0));
+        return new GameOfLifeMatrix(this.map((_, cell) => this.isAliveNextState(cell) ? 1 : 0),null, this.options);
     }
 
     // For console based
