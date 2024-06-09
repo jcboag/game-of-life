@@ -16,7 +16,7 @@ function startLoop(maxLoop=Infinity) {
             return;
         }
         g.incrementState(g.statePosition);
-        g.generateGrid(g.currentState.aliveCells);
+        g.grid.generateGrid(g.currentState.aliveCells);
         count++;
     }
     intervalId = setInterval(updateState, 200);
@@ -44,7 +44,6 @@ function stop() {
 function loopInProgress() {
     return Number.isInteger(intervalId);
 }
-
 
 const toggleStart = _ => {
     if (loopInProgress()) {
@@ -92,7 +91,6 @@ const handleKeyDown = e => {
         action();
     }
 }
-
 
 const reset = _ => {
     stop();
