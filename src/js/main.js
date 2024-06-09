@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 const DEFAULT_UPDATE_RATE = 150;
-=======
-const DEFAULT_UPDATE_RATE = 1000;
->>>>>>> refs/remotes/origin/main
 
 const Playback = {
     init: function() {
