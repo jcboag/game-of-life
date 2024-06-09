@@ -1,105 +1,110 @@
-var g = new GameOfLife();
+<<<<<<< HEAD
+const DEFAULT_UPDATE_RATE = 150;
+=======
+const DEFAULT_UPDATE_RATE = 1000;
+>>>>>>> refs/remotes/origin/main
 
-intervalId = null;
+const Playback = {
+    init: function() {
+        this.intervalId = null;
+        this.startStopButton = document.querySelector('#startStop');
+        this.rewindButton = document.querySelector('#rewind');
+        this.forwardButton = document.querySelector('#forward');
+        this.resetButton = document.querySelector('#reset');
 
-const startStopButton = document.querySelector('#startStop');
-const rewindButton = document.querySelector('#rewind');
-const forwardButton = document.querySelector('#forward');
-const resetButton = document.querySelector('#reset')
-
-function startLoop(maxLoop=Infinity) {
-    let count = 0;
-
-    const updateState = () => {
-        if (count >= maxLoop) {
-            stop();
+        this.startStopButton.onclick = this.toggleStart.bind(this);
+        this.rewindButton.onclick = this.rewind.bind(this);
+        this.forwardButton.onclick = this.forward.bind(this);
+        this.resetButton.onclick = this.reset.bind(this);
+    },
+    startLoop: function(maxLoop=Infinity,updateRate=DEFAULT_UPDATE_RATE) {
+        let count = 0;
+        const updateState = () => {
+            if (count >= maxLoop) {
+                this.stop();
+                return;
+            }
+            g.incrementState(g.statePosition);
+            g.grid.generateGrid(g.currentState.aliveCells);
+            count++;
+        };
+        this.intervalId = setInterval(updateState, updateRate);
+    },
+    stopLoop: function() {
+        clearInterval(this.intervalId);
+        this.intervalId = null;
+    },
+    start: function() {
+        this.startLoop();
+        this.startStopButton.removeEventListener('click', this.start.bind(this));
+        this.startStopButton.addEventListener('click', this.stop.bind(this));
+        this.startStopButton.innerText = 'Stop';
+    },
+    stop: function() {
+        this.stopLoop();
+        this.startStopButton.removeEventListener('click', this.stop.bind(this));
+        this.startStopButton.addEventListener('click', this.start.bind(this));
+        this.startStopButton.innerText = 'Start';
+    },
+    loopInProgress: function() {
+        return this.intervalId !== null;
+    },
+    toggleStart: function() {
+        if (this.loopInProgress()) {
+            this.stop();
+        } else {
+            this.start();
+        }
+    },
+    rewind: function() {
+        if (this.loopInProgress()) {
+            this.stop();
             return;
         }
-        g.incrementState(g.statePosition);
-        g.grid.generateGrid(g.currentState.aliveCells);
-        count++;
+        try {
+            g.statePosition--;
+        } catch {
+            g.statePosition = 0;
+        }
+    },
+    forward: function() {
+        if (this.loopInProgress()) {
+            this.stop();
+            return;
+        }
+        try {
+            g.statePosition++;
+        } catch {
+            g.statePosition = g._states.length - 1;
+        }
+    },
+    reset: function() {
+        this.stop();
+        g = new GameOfLife();
     }
-    intervalId = setInterval(updateState, 200);
-}
+};
 
-function stopLoop() { 
-    clearInterval(intervalId);
-    intervalId = null;
-}
-
-function start() {
-    startLoop();
-    startStopButton.removeEventListener('click', start);
-    startStopButton.addEventListener('click', stop);
-    startStopButton.innerText = 'Stop';
-}
-
-function stop() {
-    stopLoop();
-    startStopButton.removeEventListener('click', stop);
-    startStopButton.addEventListener('click', start);
-    startStopButton.innerText = 'Start';
-}
-
-function loopInProgress() {
-    return Number.isInteger(intervalId);
-}
-
-const toggleStart = _ => {
-    if (loopInProgress()) {
-        stop();
-    } else {
-        start();
+const KeyboardShortcuts = {
+    init: function() {
+        document.addEventListener('keydown', this.handleKeyDown.bind(this));
+    },
+    keyMap: {
+        ArrowLeft: Playback.rewind.bind(Playback),
+        ArrowRight: Playback.forward.bind(Playback),
+        ArrowUp: Playback.reset.bind(Playback),
+        Space: Playback.toggleStart.bind(Playback),
+    },
+    handleKeyDown: function(e) {
+        let action = this.keyMap[e.code];
+        if (action) {
+            e.preventDefault();
+            e.stopPropagation();
+            action();
+        }
     }
-}
+};
 
-const rewind = _ => {
-    if (loopInProgress()) {
-        stop(); 
-        return;
-    }
-    try {
-        g.statePosition--;
-    } catch {
-        g.statePosition = 0;
-    }
-}
+var g = new GameOfLife();
 
-const forward = _ => {
-    if (loopInProgress()) { 
-        stop(); 
-        return; 
-    }
-    try {
-        g.statePosition++;
-    } catch {
-        g.statePosition = g._states.length-1;
-    }
-}
-
-const keyMap = {
-    ArrowLeft: rewind,
-    ArrowRight: forward,
-    Space: toggleStart,
-}
-
-const handleKeyDown = e => {
-    let action = keyMap[e.code];
-    if (action) {
-        e.preventDefault();
-        e.stopPropagation();
-        action();
-    }
-}
-
-const reset = _ => {
-    stop();
-    g = new GameOfLife();
-}
-
-document.addEventListener('keydown', handleKeyDown);
-
-startStopButton.onclick = toggleStart;
-rewindButton.onclick = rewind;
-forwardButton.onclick = forward;
-resetButton.onclick = reset;
+KeyboardShortcuts.init();
+Playback.init();
