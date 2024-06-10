@@ -10,6 +10,7 @@ class Grid {
         this.height = this.canvas.height;
         this.length = n;
         this.step = this.width / n;
+
         this.generateGrid(); // Empty grid
     }
     // Dynamically update the offsets based on the canvas position
@@ -58,14 +59,15 @@ class Grid {
         let squares = [];
         for (let i = 0; i < n; i++) {
             for (let j = 0; j < n; j++) {
+                const step = this.step;
                 const square = {
                     row: j,
                     column: i,
-                    xMin: this.step * i,
-                    xMax: this.step * (i + 1),
-                    yMin: this.step * j,
-                    yMax: this.step * (j + 1),
-                    midPoint: [(this.step * i + this.step * (i + 1)) / 2, (this.step * j + this.step * (j + 1)) / 2]
+                    xMin: step * i,
+                    xMax: step * (i + 1),
+                    yMin: step * j,
+                    yMax: step * (j + 1),
+                    midPoint: [(step * i + step * (i + 1)) / 2, (step * j + step * (j + 1)) / 2]
                 };
                 squares.push(square);
             }
@@ -81,10 +83,7 @@ class Grid {
     getSquareFromPoint(x,y) {
         x -= this.offsets.x;
         y -= this.offsets.y;
-
-        let square = this.squares.find(square => (square.xMin <= x < square.xMax && square.yMin <= y < square.yMax));
-        if (square) console.log('Found Square:',square.row,square.column);
-        return square;
+        return this.squares.find( square => square.xMin <= x && x < square.xMax && square.yMin < y && y < square.yMax );
     }
 
     fillSquare(square, fillStyle = 'black') {
