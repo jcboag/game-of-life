@@ -13,7 +13,6 @@ class GameOfLifeMatrix extends Matrix {
     // underPopNumber: if the surrounding population is less than this, the cell dies
     constructor(initialState = null, n = GLOBALS.DEFAULT_GRID_SIZE, options={overPopNumber:3,underPopNumber:2}) {
         const state = initialState instanceof Matrix ? initialState.matrix : initialState || GameOfLifeMatrix.randomInitialState(n).matrix;
-        console.log(state);
         super(state);
 
         this.options = options;
@@ -73,13 +72,12 @@ class GameOfLife {
     #statePosition;
     constructor(initialState) {
         const blackWhite = item => item ? 'black' : 'white';
-        const blueOrange = item => item ? 'blue' : 'orange';
 
         initialState = initialState || new GameOfLifeMatrix(GameOfLifeMatrix.randomInitialState(GLOBALS.DEFAULT_LENGTH))
 
         this.#states = [ initialState ];
         this.#statePosition = 0;
-        this.displayModule = new Grid(initialState.matrix,blueOrange);
+        this.displayModule = new Grid(initialState.matrix,blackWhite);
     }
 
     get statePosition() {
