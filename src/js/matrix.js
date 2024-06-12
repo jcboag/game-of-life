@@ -44,6 +44,10 @@ class Matrix {
         return matrix[0].map((_, i) => matrix.map(row => row[i]));
     }
 
+    static getDimensions(matrix) {
+        return [ matrix[0]?.length || 1, matrix.length ];
+    }
+
     // Current implementation will fail if values contain functions
     static clone(object) {
         return JSON.parse(JSON.stringify(object));

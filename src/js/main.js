@@ -1,4 +1,5 @@
-const DEFAULT_UPDATE_RATE = 150;
+const DEFAULT_UPDATE_RATE = 75;
+const SELECTED_SQUARE_COLOR = 'red';
 
 var g;
 
@@ -8,6 +9,7 @@ const Playback = {
         this.startStopButton = document.querySelector('#startStop');
         this.rewindButton = document.querySelector('#rewind');
         this.forwardButton = document.querySelector('#forward');
+        // TODO Implement Random
         this.randomButton = document.querySelector('#random');
         this.resetButton = document.querySelector('#reset');
 
@@ -25,37 +27,35 @@ const Playback = {
                 this.stop();
                 return;
             }
-            g.incrementState(g.statePosition);
-            g.generateGrid(g.currentState.filledCells);
+            g.statePosition++;
             count++;
         };
         this.intervalId = setInterval(updateState, updateRate);
     },
     stopLoop: function() {
-        clearInterval(this.intervalId);
-        this.intervalId = null;
+        if (this.loopInProgress) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
     },
     start: function() {
         this.startLoop();
-        this.startStopButton.removeEventListener('click', this.start.bind(this));
-        this.startStopButton.addEventListener('click', this.stop.bind(this));
+        this.startStopButton.removeEventListener('click', this.start);
+        this.startStopButton.addEventListener('click', this.stop);
         this.startStopButton.innerText = 'Stop';
     },
     stop: function() {
         this.stopLoop();
-        this.startStopButton.removeEventListener('click', this.stop.bind(this));
-        this.startStopButton.addEventListener('click', this.start.bind(this));
+        this.startStopButton.removeEventListener('click', this.stop);
+        this.startStopButton.addEventListener('click', this.start);
         this.startStopButton.innerText = 'Start';
     },
     loopInProgress: function() {
         return this.intervalId !== null;
     },
     toggleStart: function() {
-        if (this.loopInProgress()) {
-            this.stop();
-        } else {
-            this.start();
-        }
+        if (this.loopInProgress()) this.stop();
+        else this.start();
     },
     rewind: function() {
         if (this.loopInProgress()) {
@@ -76,16 +76,17 @@ const Playback = {
         try {
             g.statePosition++;
         } catch {
-            g.statePosition = g._states.length - 1;
+            g.statePosition--;
         }
     },
     reset: function() {
-        this.stop();
+        if (this.loopInProgress()) this.stop();
         g.statePosition = 0;
     },
     random: function() {
-        this.stop();
-        g = new StateGrid(new GameOfLifeMatrix(), gameOfLifeTransition)
+        if (this.loopInProgress()) this.stop();
+        g = new GameOfLife()
+        g.statePosition = 0;
     }
 };
 
@@ -98,7 +99,6 @@ const KeyboardShortcuts = {
         ArrowRight: Playback.forward.bind(Playback),
         ArrowUp: Playback.reset.bind(Playback),
         Space: Playback.toggleStart.bind(Playback),
-        KeyL: () => changeGridSize(parseInt(prompt(""))),
     },
     handleKeyDown: function(e) {
         let action = this.keyMap[e.code];
@@ -110,27 +110,15 @@ const KeyboardShortcuts = {
     }
 };
 
-function getInitialGameOfLifeState() {
+function getInitialState() {
     return new GameOfLifeMatrix();
 }
 
-function changeGridSize(size) {
-    if (Number.isInteger(size)) {
-        gameGrid = new Grid(size);
-    }
-}
-
-function gameOfLifeTransition(state) {
-    return state.nextState;
-}
 
 function init() {
-    let initialState = getInitialGameOfLifeState();
-
-    g = new StateGrid(initialState, gameOfLifeTransition);
-
-    KeyboardShortcuts.init();
+    g = new GameOfLife();
     Playback.init();
+    KeyboardShortcuts.init();
 }
 
 init();
