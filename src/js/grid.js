@@ -1,36 +1,60 @@
-const DEFAULT_GRID_LENGTH = 100;
-const GRID_SELECTOR = 'canvas';
+const DEFAULT_GRID_HEIGHT = 100;
+const DEFAULT_FILL_STYLE = 'black';
 
-// An nxn collection of 'Squares'
-class Grid {
-    constructor(n=DEFAULT_GRID_LENGTH) {
-        this.canvas = document.querySelector(GRID_SELECTOR);
-        this.ctx = this.canvas.getContext('2d');
+class CanvasGridEngine {
+    static DEFAULT_CANVAS_SELECTOR = 'canvas';
+
+    constructor(m=DEFAULT_GRID_HEIGHT,n=DEFAULT_GRID_HEIGHT,canvasNode) {
+        this.canvas = canvasNode || document.querySelector(CanvasGridEngine.DEFAULT_CANVAS_SELECTOR);
+        if (!this.canvas) throw Error("No canvas element found");
+
         this.width = this.canvas.width;
         this.height = this.canvas.height;
-        this.length = n;
-        this.step = this.width / n;
 
-        this.generateGrid(); // Empty grid
-    }
-    // Dynamically update the offsets based on the canvas position
-    get offsets() {
-        const rect = this.canvas.getBoundingClientRect();
-        return { x: rect.left, y: rect.top };
+        this.rows = m;
+        this.cols = n;
+
+        this.squareWidth = this.width / this.rows
+        this.squareHeight = this.height / this.cols;
+
+        this.initSquares();
+
+        this.ctx = this.canvas.getContext('2d');
+
+        this.clearGrid(); // Clean up any previous use of grid
+        this.generateGrid(m,n);
+
+        this.regenerateGrid = () => { this.clearGrid(); this.generateGrid(m,n)}
     }
 
-    generateGrid(filledSquares = []) {
-        this.clearGrid();
-        for (let i = 0; i < this.length; i++) {
-            this.addGridLine('x', i);
-            this.addGridLine('y', i);
+    // Initial generation. 
+    initSquares() {
+        const squareWidth = this.squareWidth;
+        const squareHeight = this.squareHeight;
+        this.squares = [];
+        for (let i=0;i<this.rows;i++) {
+            for (let j=0;j<this.cols;j++) {
+                this.squares.push({ 
+                    location: [i,j],
+                    xBounds: [squareWidth * i, squareWidth * (i+1)], 
+                    yBounds: [squareHeight * j, squareHeight * (j+1)],
+                    width: squareWidth,
+                    height: squareHeight,
+                });
+            }
         }
-        this.squares = this.getSquares();
-        filledSquares.forEach(([i, j]) => this.fillSquare(this.getSquare(i, j)));
     }
 
-    clearGrid() {
-        this.ctx.clearRect(0, 0, this.width, this.height);
+    // Not strictly necessary
+    generateGrid(m,n) {
+        const width = this.squareWidth;
+        const height = this.squareHeight;
+        for (let i=0;i<m;i++) {
+            this.addLine([width * i,0],[width*i,this.height]);
+        }
+        for (let j=0;j<n;j++) {
+            this.addLine([0,height*j],[this.width,height*j])
+        }
     }
 
     addLine(startPos, endPos) {
@@ -40,133 +64,64 @@ class Grid {
         this.ctx.stroke();
     }
 
-    addGridLine(axis, n) {
-        const step = this.step * n;
-        switch (axis) {
-            case 'x':
-                this.addLine([0, step], [this.width, step]);
-                break;
-            case 'y':
-                this.addLine([step, 0], [step, this.height]);
-                break;
-            default:
-                break;
-        }
+    render(matrix) {
+        this.clearGrid();
+        Matrix.forEach(matrix, (color, [i,j]) => { 
+            this.fillSquare([i,j], color);
+        });
     }
 
-    getSquares() {
-        const n = this.length;
-        let squares = [];
-        for (let i = 0; i < n; i++) {
-            for (let j = 0; j < n; j++) {
-                const step = this.step;
-                const square = {
-                    row: j,
-                    column: i,
-                    xMin: step * i,
-                    xMax: step * (i + 1),
-                    yMin: step * j,
-                    yMax: step * (j + 1),
-                    midPoint: [(step * i + step * (i + 1)) / 2, (step * j + step * (j + 1)) / 2]
-                };
-                squares.push(square);
-            }
-        }
-        return squares;
+    getSquare([i,j]) {
+        return this.squares.find(sq => sq.location[0] === i && sq.location[1] === j);
     }
 
-    getSquare(i, j) {
-        return this.squares.find(square => (square.row === i) && (square.column === j));
+    #clear(x,y,w,h) {
+        this.ctx.clearRect(x,y,w,h);
     }
 
-    // Get square from a point on the entire document
-    getSquareFromPoint(x,y) {
-        x -= this.offsets.x;
-        y -= this.offsets.y;
-        return this.squares.find( square => square.xMin <= x && x < square.xMax && square.yMin < y && y < square.yMax );
-    }
-
-    fillSquare(square, fillStyle = 'black') {
+    #fill(x,y,w,h,fillStyle) {
         this.ctx.fillStyle = fillStyle;
-        this.ctx.fillRect(square.xMin, square.yMin, this.step, this.step);
+        this.ctx.fillRect(x,y,w,h);
     }
 
-    isFilled(square) {
-        let imageData = this.ctx.getImageData(...square.midPoint, 1, 1).data;
-        let [r, g, b, a] = imageData;
-        return !(r === 0 && g === 0 && b === 0 && a === 0);
+    fillSquare([i,j],fillStyle=DEFAULT_FILL_STYLE) {
+        let square = this.getSquare([i,j]);
+        if (square) {
+            this.#fill( square.xBounds[0], square.yBounds[0], square.width, square.height, fillStyle );
+        }
     }
 
-    getFilledSquares() {
-        return this.squares.filter(square => this.isFilled(square));
+    clearGrid() {
+        this.#clear(0,0,this.width,this.height)
     }
-
-    clearSquare(row, col) {
-        let square = this.getSquare(row, col);
-        this.ctx.clearRect(square.xMin, square.yMin, this.step, this.step);
-        // Need to replace the lost lines
-        this.addGridLine('x', row);
-        this.addGridLine('y', col);
-    }
-
 }
 
-// State Grid is a grid that maintains a memory of past states
-// and with the ability to move to the next state
+class Grid {
+    constructor(initialState=null,toRGB=null) {
+        const zeroWhiteOneBlack = a => a ? 'black' : 'white';
 
-class StateGrid extends Grid {
-    #states;
+        initialState = initialState || Matrix.getNullMatrix(DEFAULT_GRID_HEIGHT,DEFAULT_GRID_HEIGHT);
 
-    // initialState is a matrix-like object
-    // assumed to be supplied with a `filledCells` property
-    // and a transition function `transitionFunc` which goes to
-    // the next state
-    
-    constructor(initialState, transitionFunc) {
+        this.gridEngine = new CanvasGridEngine(...Matrix.getDimensions(initialState));
 
-        super(initialState.length || initialState.matrix.length);
+        this.toRGB = toRGB ||  zeroWhiteOneBlack;
 
-        this.generateGrid(initialState.filledCells);
-        this.transitionFunc = transitionFunc
-
-        // Track states for rewinding / forwarding
-        this.#states = [initialState];
-        this._statePosition = 0;
-
+        if (initialState && this.toRGB) this.render(initialState);
     }
 
-    get currentState(){
-        return this.#states[this.statePosition];
+    get squares() {
+        return this.gridEngine.squares;
     }
 
-    // statePosition points to the current position with states.
-    get statePosition() {
-        return this._statePosition;
+    get length() {
+        return this.gridEngine.length;
     }
 
-    // Need to insure statePosition is an integer within range
-    set statePosition(index) {
-        if ( !Number.isInteger(parseInt(index)) || index > this.#states.length) throw Error('`set statePosition`: invalid index');
-        else if (index === this.#states.length ) this.incrementState()
-        // If it is larger we simply generate the state
-        else {
-            this._statePosition = index;
-            this.generateGrid(this.currentState.filledCells);
-        }
+    get width() {
+        return this.gridEngine.width;
     }
 
-    // If state already exists, the state has been saved, so we can 
-    // just move to it. Otherwise, generate the state
-    incrementState() {
-        // Go to the state at given index 
-        if (this.statePosition === (this.#states.length-1)) {
-        // Extend the states array with the next state
-            this.#states.push(this.transitionFunc(this.currentState));
-        }
-        this.statePosition++;
-    }
-
-    get states() {
-        return this.#states;
+    render(matrix,func=this.toRGB) {
+        this.gridEngine.render(Matrix.map( matrix, func));
     }
 }
