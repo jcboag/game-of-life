@@ -85,8 +85,7 @@ const Playback = {
     },
     random: function() {
         if (this.loopInProgress()) this.stop();
-        g = new GameOfLife()
-        g.statePosition = 0;
+        g.displayModule.init( new GameOfLifeMatrix().matrix );
     }
 };
 
@@ -114,11 +113,11 @@ function getInitialState() {
     return new GameOfLifeMatrix();
 }
 
-
 function init() {
-    g = new GameOfLife();
+    grid = new Grid();
+    g = new GameOfLife(null,grid);
+    g.display();
     Playback.init();
     KeyboardShortcuts.init();
 }
-
 init();

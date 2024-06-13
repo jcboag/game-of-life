@@ -1,5 +1,5 @@
 const GLOBALS = {
-    DEFAULT_LENGTH: 50,
+    DEFAULT_LENGTH: 100,
     DEFAULT_GRID_SIZE: 100, // Each 'Game Of Life' Matrix is an nxn grid
 }
 
@@ -11,7 +11,7 @@ class GameOfLifeMatrix extends Matrix {
 
     // overPopNumber: if the surrounding population is greater than this, the cell dies
     // underPopNumber: if the surrounding population is less than this, the cell dies
-    constructor(initialState = null, n = GLOBALS.DEFAULT_GRID_SIZE, options={overPopNumber:3,underPopNumber:2}) {
+    constructor(initialState = null, n = GLOBALS.DEFAULT_LENGTH, options={overPopNumber:3,underPopNumber:2}) {
         const state = initialState instanceof Matrix ? initialState.matrix : initialState || GameOfLifeMatrix.randomInitialState(n).matrix;
         super(state);
 
@@ -70,14 +70,14 @@ class GameOfLifeMatrix extends Matrix {
 class GameOfLife {
     #states;
     #statePosition;
-    constructor(initialState) {
+    constructor(initialState,grid=null) {
         const blackWhite = item => item ? 'black' : 'white';
 
-        initialState = initialState || new GameOfLifeMatrix(GameOfLifeMatrix.randomInitialState(GLOBALS.DEFAULT_LENGTH))
+        initialState = initialState || new GameOfLifeMatrix();
 
         this.#states = [ initialState ];
         this.#statePosition = 0;
-        this.displayModule = new Grid(initialState.matrix,blackWhite);
+        this.displayModule = grid ? grid : new Grid(initialState.matrix,blackWhite);
     }
 
     get statePosition() {
@@ -88,6 +88,10 @@ class GameOfLife {
         return this.#states[this.statePosition];
     }
 
+    display() {
+        this.displayModule.render(this.currentState.matrix);
+    }
+
     set statePosition(index) {
         if (!(Number.isInteger(index) && index >= 0 && index <= this.#states.length)) throw Error("Invalid Index");
         else {
@@ -95,11 +99,7 @@ class GameOfLife {
                 this.#states.push(this.currentState.nextState);
             }
             this.#statePosition = index;
-            this.displayModule.render(this.currentState.matrix);
+            this.display();
         }
-    }
-
-    reset(initialState) {
-        this.init(initialState);
     }
 }
