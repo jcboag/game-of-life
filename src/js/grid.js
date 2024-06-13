@@ -1,48 +1,30 @@
 const DEFAULT_GRID_HEIGHT = 100;
-const DEFAULT_FILL_STYLE = 'black';
+
+// The `GridEngine` is responsible for the lower level details of the grid,
+// While the `Grid` itself only deals with `squares`.
 
 class CanvasGridEngine {
     static DEFAULT_CANVAS_SELECTOR = 'canvas';
 
-    constructor(m=DEFAULT_GRID_HEIGHT,n=DEFAULT_GRID_HEIGHT,canvasNode) {
-        this.canvas = canvasNode || document.querySelector(CanvasGridEngine.DEFAULT_CANVAS_SELECTOR);
+    constructor(canvasNode=document.querySelector(CanvasGridEngine.DEFAULT_CANVAS_SELECTOR)) {
+        this.canvas = canvasNode;
         if (!this.canvas) throw Error("No canvas element found");
+
         this.ctx = this.canvas.getContext('2d');
-        this.init(m,n);
+        this.width = this.canvas.width;
+        this.height = this.canvas.height;
 
     }
     init(m,n) {
-        this.width = this.canvas.width;
-        this.height = this.canvas.height;
         this.rows = m;
         this.cols = n;
         this.squareWidth = this.width / this.rows
         this.squareHeight = this.height / this.cols;
-
-        this.initSquares();
-
     }
 
     setDimensions(m,n) {
         this.clearGrid();
         this.init(m,n);
-    }
-
-    initSquares() {
-        const squareWidth = this.squareWidth;
-        const squareHeight = this.squareHeight;
-        this.squares = [];
-        for (let i=0;i<this.rows;i++) {
-            for (let j=0;j<this.cols;j++) {
-                this.squares.push({ 
-                    location: [i,j],
-                    xBounds: [squareWidth * i, squareWidth * (i+1)], 
-                    yBounds: [squareHeight * j, squareHeight * (j+1)],
-                    width: squareWidth,
-                    height: squareHeight,
-                });
-            }
-        }
     }
 
     generateGridLines() {
@@ -71,9 +53,6 @@ class CanvasGridEngine {
         });
     }
 
-    getSquare([i,j]) {
-        return this.squares.find(sq => sq.location[0] === i && sq.location[1] === j);
-    }
 
     #clear(x,y,w,h) {
         this.ctx.clearRect(x,y,w,h);
@@ -84,69 +63,50 @@ class CanvasGridEngine {
         this.ctx.fillRect(x,y,w,h);
     }
 
-    fillSquare([i,j],fillStyle=DEFAULT_FILL_STYLE) {
-        let square = this.getSquare([i,j]);
-        if (square) {
-            this.#fill( square.xBounds[0], square.yBounds[0], square.width, square.height, fillStyle );
-        }
+    fillSquare([i,j],fillStyle) {
+        const [ x, y ] = [i * this.squareWidth, j * this.squareHeight];
+        this.#fill(x,y,this.squareWidth,this.squareHeight,fillStyle);
     }
 
     clearGrid() {
-        this.#clear(0,0,this.width,this.height)
+        this.#clear(0,0,this.width,this.height);
     }
 }
 
+
+// Deals with higher level operations of the grid (square level)
+// `Grid` can render matrices of RGBA values
 class Grid {
-    // initialState: 2D Matrix
-    // toRGB: function that maps matrix entries to colors
-    // generateGridLines: boolean
-    constructor(initialState=null,toRGB=null,generateGridLines=true) {
-        const zeroWhiteOneBlack = a => a ? 'black' : 'white';
+    #state;
 
+    constructor(el) {
+        this.gridEngine = new CanvasGridEngine(el);
+    }
+
+    init(initialState) {
         initialState = initialState || Matrix.getNullMatrix(DEFAULT_GRID_HEIGHT,DEFAULT_GRID_HEIGHT);
-
-        this.gridEngine = new CanvasGridEngine(...Matrix.getDimensions(initialState));
-
-        if (generateGridLines) this.gridEngine.generateGridLines();
-
-        this.toRGB = toRGB ||  zeroWhiteOneBlack;
+        [this.rows, this.columns] = Matrix.getDimensions(initialState);
+        this.gridEngine.init(this.rows,this.columns);
+        this.render(initialState);
 
     }
 
-    init(state) {
-        if (state) {
-            this.gridEngine.regenerateGrid(...Matrix.getDimensions(state));
-            this.render(state);
-        }
-    }
-
-    // Need to match the grid dimensions with that of the `state`
-    reinit(state) {
-        if (state) {
-            this.gridEngine.regenerateGrid(...Matrix.getDimensions(state));
-            this.render(state);
-        } else {
-            this.gridEngine.regenerateGrid();
-        }
+    render(state) {
+        this.clear();
+        if (state) this.#state = state;
+        Matrix.forEach(this.#state, (a,index) => this.#setSquareRGBA(index,a));
     }
 
     clear() {
+        if (!this.#state) this.#state = [];;
         this.gridEngine.clearGrid();
     }
 
-    get squares() {
-        return this.gridEngine.squares;
+    #setSquareRGBA([i,j],fillStyle) {
+        this.gridEngine.fillSquare([i,j],fillStyle);
     }
 
-    get length() {
-        return this.gridEngine.length;
+    toggleGridLines() {
     }
 
-    get width() {
-        return this.gridEngine.width;
-    }
-
-    render(matrix,func=this.toRGB) {
-        this.gridEngine.render(Matrix.map( matrix, func));
-    }
 }

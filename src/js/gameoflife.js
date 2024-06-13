@@ -1,6 +1,6 @@
 const GLOBALS = {
-    DEFAULT_LENGTH: 100,
-    DEFAULT_GRID_SIZE: 100, // Each 'Game Of Life' Matrix is an nxn grid
+    DEFAULT_LENGTH: 150,
+    DEFAULT_GRID_SIZE: 150, // Each 'Game Of Life' Matrix is an nxn grid
 }
 
 // Matrix with only ones and zeros, an algorithm to classify entries, and a transition function.
@@ -68,16 +68,21 @@ class GameOfLifeMatrix extends Matrix {
 // TODO: Add `colorFunc' to constructor to dynamically determine how to color cells 
 // TODO: Extend the game to more than 2 colors, eg color cells based on lifespan
 class GameOfLife {
+    static monochrome = a => a ? 'black' : 'white';
+
     #states;
     #statePosition;
     constructor(initialState,grid=null) {
-        const blackWhite = item => item ? 'black' : 'white';
+        this.init(initialState);
 
-        initialState = initialState || new GameOfLifeMatrix();
+        this.displayModule = grid ? grid : new Grid();
+        grid.init(initialState.map(GameOfLife.monochrome).matrix);
+    }
 
-        this.#states = [ initialState ];
+    init(state) {
+        state = state || new GameOfLifeMatrix();
+        this.#states = [ state ];
         this.#statePosition = 0;
-        this.displayModule = grid ? grid : new Grid(initialState.matrix,blackWhite);
     }
 
     get statePosition() {
@@ -88,8 +93,8 @@ class GameOfLife {
         return this.#states[this.statePosition];
     }
 
-    display() {
-        this.displayModule.render(this.currentState.matrix);
+    display(rgbFunc=GameOfLife.monochrome) {
+        this.displayModule.render(this.currentState.map(rgbFunc).matrix);
     }
 
     set statePosition(index) {
