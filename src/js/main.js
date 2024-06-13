@@ -1,4 +1,5 @@
-const DEFAULT_UPDATE_RATE = 75;
+const DEFAULT_UPDATE_RATE = 90;
+const DEFAULT_MATRIX_SIZE = 50;
 const SELECTED_SQUARE_COLOR = 'red';
 
 var g;
@@ -85,7 +86,8 @@ const Playback = {
     },
     random: function() {
         if (this.loopInProgress()) this.stop();
-        g.displayModule.init( new GameOfLifeMatrix().matrix );
+        g.init( new GameOfLifeMatrix()  );
+        g.display();
     }
 };
 
@@ -109,15 +111,24 @@ const KeyboardShortcuts = {
     }
 };
 
-function getInitialState() {
+
+
+function getInitialState(size) {
+    const matrix = size ? Matrix.getNullMatrix(size,size) : Matrix.getNullMatrix(DEFAULT_MATRIX_SIZE);
+    g.render(matrix);
+    // Display empty grid and take in user input
     return new GameOfLifeMatrix();
 }
 
 function init() {
+    const initialState = new GameOfLifeMatrix(GameOfLifeMatrix.randomInitialState(100))
+
     grid = new Grid();
-    g = new GameOfLife(null,grid);
-    g.display();
+
+    g = new GameOfLife(initialState,grid);
+
     Playback.init();
     KeyboardShortcuts.init();
 }
+
 init();
