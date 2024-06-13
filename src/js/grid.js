@@ -7,27 +7,27 @@ class CanvasGridEngine {
     constructor(m=DEFAULT_GRID_HEIGHT,n=DEFAULT_GRID_HEIGHT,canvasNode) {
         this.canvas = canvasNode || document.querySelector(CanvasGridEngine.DEFAULT_CANVAS_SELECTOR);
         if (!this.canvas) throw Error("No canvas element found");
+        this.ctx = this.canvas.getContext('2d');
+        this.init(m,n);
 
+    }
+    init(m,n) {
         this.width = this.canvas.width;
         this.height = this.canvas.height;
-
         this.rows = m;
         this.cols = n;
-
         this.squareWidth = this.width / this.rows
         this.squareHeight = this.height / this.cols;
 
         this.initSquares();
 
-        this.ctx = this.canvas.getContext('2d');
-
-        this.clearGrid(); // Clean up any previous use of grid
-        this.generateGrid(m,n);
-
-        this.regenerateGrid = () => { this.clearGrid(); this.generateGrid(m,n)}
     }
 
-    // Initial generation. 
+    setDimensions(m,n) {
+        this.clearGrid();
+        this.init(m,n);
+    }
+
     initSquares() {
         const squareWidth = this.squareWidth;
         const squareHeight = this.squareHeight;
@@ -45,19 +45,19 @@ class CanvasGridEngine {
         }
     }
 
-    // Not strictly necessary
-    generateGrid(m,n) {
+    generateGridLines() {
         const width = this.squareWidth;
         const height = this.squareHeight;
-        for (let i=0;i<m;i++) {
-            this.addLine([width * i,0],[width*i,this.height]);
+
+        for (let i=0;i<this.rows;i++) {
+            this.#addLine([width * i,0],[width*i,this.height]);
         }
-        for (let j=0;j<n;j++) {
-            this.addLine([0,height*j],[this.width,height*j])
+        for (let j=0;j<this.cols;j++) {
+            this.#addLine([0,height*j],[this.width,height*j])
         }
     }
 
-    addLine(startPos, endPos) {
+    #addLine(startPos, endPos) {
         this.ctx.beginPath();
         this.ctx.moveTo(...startPos);
         this.ctx.lineTo(...endPos);
@@ -97,16 +97,41 @@ class CanvasGridEngine {
 }
 
 class Grid {
-    constructor(initialState=null,toRGB=null) {
+    // initialState: 2D Matrix
+    // toRGB: function that maps matrix entries to colors
+    // generateGridLines: boolean
+    constructor(initialState=null,toRGB=null,generateGridLines=true) {
         const zeroWhiteOneBlack = a => a ? 'black' : 'white';
 
         initialState = initialState || Matrix.getNullMatrix(DEFAULT_GRID_HEIGHT,DEFAULT_GRID_HEIGHT);
 
         this.gridEngine = new CanvasGridEngine(...Matrix.getDimensions(initialState));
 
+        if (generateGridLines) this.gridEngine.generateGridLines();
+
         this.toRGB = toRGB ||  zeroWhiteOneBlack;
 
-        if (initialState && this.toRGB) this.render(initialState);
+    }
+
+    init(state) {
+        if (state) {
+            this.gridEngine.regenerateGrid(...Matrix.getDimensions(state));
+            this.render(state);
+        }
+    }
+
+    // Need to match the grid dimensions with that of the `state`
+    reinit(state) {
+        if (state) {
+            this.gridEngine.regenerateGrid(...Matrix.getDimensions(state));
+            this.render(state);
+        } else {
+            this.gridEngine.regenerateGrid();
+        }
+    }
+
+    clear() {
+        this.gridEngine.clearGrid();
     }
 
     get squares() {
