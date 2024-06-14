@@ -75,7 +75,7 @@ class GameOfLife {
     constructor(initialState,grid=null) {
         this.init(initialState);
         this.displayModule = grid ? grid : new Grid();
-        grid.init(initialState.map(GameOfLife.monochrome).matrix);
+        this.displayModule.init(initialState.map(GameOfLife.monochrome).matrix);
     }
 
     init(state) {

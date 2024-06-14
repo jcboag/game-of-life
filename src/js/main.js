@@ -1,6 +1,5 @@
 const DEFAULT_UPDATE_RATE = 90;
 const DEFAULT_MATRIX_SIZE = 50;
-const SELECTED_SQUARE_COLOR = 'red';
 
 var g;
 
@@ -100,9 +99,9 @@ const GridManipulations = {
         const gridLinesCheckbox = document.getElementById('gridLines');
         gridLinesCheckbox.checked = JSON.parse(localStorage.getItem('gridLines'));
 
-        GridManipulations.setGridLines();
+        this.setGridLines();
         document.addEventListener('input', e => {
-            if (e.target.id === 'gridLines') GridManipulations.setGridLines();
+            if (e.target.id === 'gridLines') this.setGridLines();
         });
     },
     setGridLines() {
@@ -117,7 +116,6 @@ const GridManipulations = {
         const gridLinesCheckbox = document.getElementById("gridLines");
         gridLinesCheckbox.checked = !grid.gridLines;
         GridManipulations.setGridLines();
-        console.log('gridLines')
     }
 }
 
@@ -142,20 +140,14 @@ const KeyboardShortcuts = {
     }
 };
 
-function getInitialState(size) {
-    const matrix = size ? Matrix.getNullMatrix(size,size) : Matrix.getNullMatrix(DEFAULT_MATRIX_SIZE);
-    g.render(matrix);
-    // Display empty grid and take in user input
+function getInitialState() {
     return new GameOfLifeMatrix();
 }
 
 function init() {
-   const initialState = new GameOfLifeMatrix(GameOfLifeMatrix.randomInitialState(10));
-
     grid = new Grid();
-
-    grid.init();
-
+    const initialState = getInitialState();
+    grid.init(initialState.map(GameOfLife.monochrome).matrix);
     g = new GameOfLife(initialState,grid);
 
     Playback.init();
@@ -164,3 +156,4 @@ function init() {
 }
 
 init();
+
