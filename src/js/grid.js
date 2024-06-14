@@ -4,39 +4,18 @@ const DEFAULT_GRID_HEIGHT = 100;
 // While the `Grid` itself only deals with `squares`.
 
 class CanvasGridEngine {
-    static DEFAULT_CANVAS_SELECTOR = 'canvas';
-
-    constructor(canvasNode=document.querySelector(CanvasGridEngine.DEFAULT_CANVAS_SELECTOR)) {
+    constructor(canvasNode) {
         this.canvas = canvasNode;
         if (!this.canvas) throw Error("No canvas element found");
-
         this.ctx = this.canvas.getContext('2d');
-        this.width = this.canvas.width;
-        this.height = this.canvas.height;
 
     }
+
+    // Needs to be re initialized anytime the number of squares 
+    // or the size of the grid changes
     init(m,n) {
-        this.rows = m;
-        this.cols = n;
-        this.squareWidth = this.width / this.rows
-        this.squareHeight = this.height / this.cols;
-    }
-
-    setDimensions(m,n) {
-        this.clearGrid();
-        this.init(m,n);
-    }
-
-    generateGridLines() {
-        const width = this.squareWidth;
-        const height = this.squareHeight;
-
-        for (let i=0;i<this.rows;i++) {
-            this.#addLine([width * i,0],[width*i,this.height]);
-        }
-        for (let j=0;j<this.cols;j++) {
-            this.#addLine([0,height*j],[this.width,height*j])
-        }
+        this.squareWidth = this.canvas.width / n;
+        this.squareHeight = this.canvas.height / m;
     }
 
     #addLine(startPos, endPos) {
@@ -44,13 +23,6 @@ class CanvasGridEngine {
         this.ctx.moveTo(...startPos);
         this.ctx.lineTo(...endPos);
         this.ctx.stroke();
-    }
-
-    render(matrix) {
-        this.clearGrid();
-        Matrix.forEach(matrix, (color, [i,j]) => { 
-            this.fillSquare([i,j], color);
-        });
     }
 
 
@@ -63,13 +35,26 @@ class CanvasGridEngine {
         this.ctx.fillRect(x,y,w,h);
     }
 
+    addLineAcrossCanvas(axis,p) {
+        axis = axis.toLowerCase();
+        if (axis === 'x') this.#addLine( [0,p], [this.canvas.width,p]);
+        if (axis === 'y') this.#addLine( [p,0], [p,this.canvas.height]);
+    }
+
+    render(matrix) {
+        this.clearGrid();
+        Matrix.forEach(matrix, (color, [i,j]) => { 
+            this.fillSquare([i,j], color);
+        });
+    }
+
     fillSquare([i,j],fillStyle) {
         const [ x, y ] = [i * this.squareWidth, j * this.squareHeight];
         this.#fill(x,y,this.squareWidth,this.squareHeight,fillStyle);
     }
 
     clearGrid() {
-        this.#clear(0,0,this.width,this.height);
+        this.#clear(0,0,this.canvas.width,this.canvas.height);
     }
 }
 
@@ -79,34 +64,56 @@ class CanvasGridEngine {
 class Grid {
     #state;
 
-    constructor(el) {
+    constructor(el=document.querySelector('canvas')) {
         this.gridEngine = new CanvasGridEngine(el);
     }
 
-    init(initialState) {
+    init(initialState,gridLines=false) {
+        this.gridLines = gridLines;
         initialState = initialState || Matrix.getNullMatrix(DEFAULT_GRID_HEIGHT,DEFAULT_GRID_HEIGHT);
         [this.rows, this.columns] = Matrix.getDimensions(initialState);
         this.gridEngine.init(this.rows,this.columns);
+
         this.render(initialState);
-
-    }
-
-    render(state) {
-        this.clear();
-        if (state) this.#state = state;
-        Matrix.forEach(this.#state, (a,index) => this.#setSquareRGBA(index,a));
-    }
-
-    clear() {
-        if (!this.#state) this.#state = [];;
-        this.gridEngine.clearGrid();
     }
 
     #setSquareRGBA([i,j],fillStyle) {
         this.gridEngine.fillSquare([i,j],fillStyle);
     }
 
-    toggleGridLines() {
+    // axis: x or y
+    // `p` : row (if axis is `x`) and col ( if axis `y` )
+    #addLine(axis,p) {
+        p = Math.floor(p) * this.gridEngine.squareWidth;
+        this.gridEngine.addLineAcrossCanvas(axis, Math.floor(p) ); 
+    }
+
+    addGridLines() {
+        for (let i=0; i < this.rows; i++) {
+            this.#addLine('x',i)
+        }
+        for (let j=0; j < this.columns; j++ ) {
+            this.#addLine('y',j)
+        }
+        this.gridLines=true;
+    }
+
+    // Just re-render the stored state
+    removeGridLines() {
+        this.gridLines = false;
+        this.render(this.#state);
+    }
+
+    render(state) {
+        this.clear();
+        if (state) this.#state = state;
+        Matrix.forEach(this.#state, (a,index) => this.#setSquareRGBA(index,a));
+        if (this.gridLines) this.addGridLines();
+    }
+
+    clear() {
+        if (!this.#state) this.#state = [];;
+        this.gridEngine.clearGrid();
     }
 
 }

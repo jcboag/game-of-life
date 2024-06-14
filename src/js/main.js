@@ -91,6 +91,36 @@ const Playback = {
     }
 };
 
+
+const GridManipulations = {
+    init: function() {
+        this.initGridLines();
+    },
+    initGridLines() {
+        const gridLinesCheckbox = document.getElementById('gridLines');
+        gridLinesCheckbox.checked = JSON.parse(localStorage.getItem('gridLines'));
+
+        GridManipulations.setGridLines();
+        document.addEventListener('input', e => {
+            if (e.target.id === 'gridLines') GridManipulations.setGridLines();
+        });
+    },
+    setGridLines() {
+        const gridLinesEnabled = document.getElementById('gridLines').checked;
+        if (gridLinesEnabled) grid.addGridLines();
+        else grid.removeGridLines();
+
+        // Save state for reaload
+        localStorage.setItem('gridLines', JSON.stringify(grid.gridLines));
+    },
+    toggleGridLines() {
+        const gridLinesCheckbox = document.getElementById("gridLines");
+        gridLinesCheckbox.checked = !grid.gridLines;
+        GridManipulations.setGridLines();
+        console.log('gridLines')
+    }
+}
+
 const KeyboardShortcuts = {
     init: function() {
         document.addEventListener('keydown', this.handleKeyDown.bind(this));
@@ -100,9 +130,10 @@ const KeyboardShortcuts = {
         ArrowRight: Playback.forward.bind(Playback),
         ArrowUp: Playback.reset.bind(Playback),
         Space: Playback.toggleStart.bind(Playback),
+        G: GridManipulations.toggleGridLines,
     },
     handleKeyDown: function(e) {
-        let action = this.keyMap[e.code];
+        let action = this.keyMap[e.code.replace(/Key|Digit/,'')];
         if (action) {
             e.preventDefault();
             e.stopPropagation();
@@ -110,8 +141,6 @@ const KeyboardShortcuts = {
         }
     }
 };
-
-
 
 function getInitialState(size) {
     const matrix = size ? Matrix.getNullMatrix(size,size) : Matrix.getNullMatrix(DEFAULT_MATRIX_SIZE);
@@ -121,14 +150,17 @@ function getInitialState(size) {
 }
 
 function init() {
-    const initialState = new GameOfLifeMatrix(GameOfLifeMatrix.randomInitialState(100))
+   const initialState = new GameOfLifeMatrix(GameOfLifeMatrix.randomInitialState(10));
 
     grid = new Grid();
+
+    grid.init();
 
     g = new GameOfLife(initialState,grid);
 
     Playback.init();
     KeyboardShortcuts.init();
+    GridManipulations.init();
 }
 
 init();
