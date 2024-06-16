@@ -1,10 +1,10 @@
 const DEFAULT_UPDATE_RATE = 90;
 const DEFAULT_MATRIX_SIZE = 50;
 
-var g;
+var g,grid;
 
 const Playback = {
-    init: function() {
+    init() {
         this.intervalId = null;
         this.startStopButton = document.querySelector('#startStop');
         this.rewindButton = document.querySelector('#rewind');
@@ -19,7 +19,7 @@ const Playback = {
         this.randomButton.onclick = this.random.bind(this);
         this.resetButton.onclick = this.reset.bind(this);
     },
-    startLoop: function(maxLoop=Infinity,updateRate=DEFAULT_UPDATE_RATE) {
+    startLoop(maxLoop=Infinity,updateRate=DEFAULT_UPDATE_RATE) {
         let count = 0;
 
         const updateState = () => {
@@ -32,32 +32,32 @@ const Playback = {
         };
         this.intervalId = setInterval(updateState, updateRate);
     },
-    stopLoop: function() {
+    stopLoop() {
         if (this.loopInProgress) {
             clearInterval(this.intervalId);
             this.intervalId = null;
         }
     },
-    start: function() {
+    start() {
         this.startLoop();
         this.startStopButton.removeEventListener('click', this.start);
         this.startStopButton.addEventListener('click', this.stop);
         this.startStopButton.innerText = 'Stop';
     },
-    stop: function() {
+    stop() {
         this.stopLoop();
         this.startStopButton.removeEventListener('click', this.stop);
         this.startStopButton.addEventListener('click', this.start);
         this.startStopButton.innerText = 'Start';
     },
-    loopInProgress: function() {
+    loopInProgress() {
         return this.intervalId !== null;
     },
-    toggleStart: function() {
+    toggleStart() {
         if (this.loopInProgress()) this.stop();
         else this.start();
     },
-    rewind: function() {
+    rewind() {
         if (this.loopInProgress()) {
             this.stop();
             return;
@@ -68,7 +68,7 @@ const Playback = {
             g.statePosition = 0;
         }
     },
-    forward: function() {
+    forward() {
         if (this.loopInProgress()) {
             this.stop();
             return;
@@ -79,20 +79,19 @@ const Playback = {
             g.statePosition--;
         }
     },
-    reset: function() {
+    reset() {
         if (this.loopInProgress()) this.stop();
         g.statePosition = 0;
     },
-    random: function() {
+    random() {
         if (this.loopInProgress()) this.stop();
-        g.init( new GameOfLifeMatrix()  );
-        g.display();
+        g.init(new GameOfLifeMatrix());
     }
 };
 
 
 const GridManipulations = {
-    init: function() {
+    init() {
         this.initGridLines();
     },
     initGridLines() {
@@ -120,7 +119,7 @@ const GridManipulations = {
 }
 
 const KeyboardShortcuts = {
-    init: function() {
+    init() {
         document.addEventListener('keydown', this.handleKeyDown.bind(this));
     },
     keyMap: {
@@ -130,7 +129,7 @@ const KeyboardShortcuts = {
         Space: Playback.toggleStart.bind(Playback),
         G: GridManipulations.toggleGridLines,
     },
-    handleKeyDown: function(e) {
+    handleKeyDown(e) {
         let action = this.keyMap[e.code.replace(/Key|Digit/,'')];
         if (action) {
             e.preventDefault();
@@ -141,19 +140,43 @@ const KeyboardShortcuts = {
 };
 
 function getInitialState() {
+
     return new GameOfLifeMatrix();
 }
 
-function init() {
-    grid = new Grid();
-    const initialState = getInitialState();
-    grid.init(initialState.map(GameOfLife.monochrome).matrix);
-    g = new GameOfLife(initialState,grid);
+function initializeGameOfLifeClass() {
 
-    Playback.init();
-    KeyboardShortcuts.init();
+    // Deocrate the setter `GameOfLife.statePosition` so changes in state are rendered anytime it changes
+    const statePositionSetter = Object.getOwnPropertyDescriptor(GameOfLife.prototype, 'statePosition').set;
+    Object.defineProperty( GameOfLife.prototype, 'statePosition', {
+        set(statePosition) { 
+            statePositionSetter.call(this,statePosition);
+            grid.render(grid.render(g.monochrome));
+        }
+    });
+
+    // Add a 'mononchrome' property to `GameOfLife` which gives its current state as as a monochrome
+    // matrix for input into `Grid`.
+    Object.defineProperty( GameOfLife.prototype, 'monochrome' , {
+        get() {
+            return this.currentState.map( a => a ? 'white' : 'black' ).matrix
+        }
+    });
+
+}
+
+function init() {
+
+    initializeGameOfLifeClass();
+    g = new GameOfLife(); 
+    g.init();
+
+    grid = new Grid(); 
+    grid.init(g.monochrome);
+
     GridManipulations.init();
+    KeyboardShortcuts.init();
+    Playback.init();
 }
 
 init();
-

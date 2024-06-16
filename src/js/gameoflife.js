@@ -58,24 +58,13 @@ class GameOfLifeMatrix extends Matrix {
         return this.equals(this.nextState);
     }
 
-    // For console based
-    display({ deadToken = GLOBALS.DEFAULT_DEAD_TOKEN, aliveToken = GLOBALS.DEFAULT_ALIVE_TOKEN } = {}) {
-        console.log(this.matrix.map(row => row.map(cell => (cell === 0 ? deadToken : aliveToken)).join(' ')).join('\n'));
-    }
 }
 
-
-// TODO: Add `colorFunc' to constructor to dynamically determine how to color cells 
-// TODO: Extend the game to more than 2 colors, eg color cells based on lifespan
 class GameOfLife {
-    static monochrome = a => a ? 'black' : 'white';
-
     #states;
     #statePosition;
-    constructor(initialState,grid=null) {
+    constructor(initialState) {
         this.init(initialState);
-        this.displayModule = grid ? grid : new Grid();
-        this.displayModule.init(initialState.map(GameOfLife.monochrome).matrix);
     }
 
     init(state) {
@@ -92,10 +81,6 @@ class GameOfLife {
         return this.#states[this.statePosition];
     }
 
-    display(rgbFunc=GameOfLife.monochrome) {
-        this.displayModule.render(this.currentState.map(rgbFunc).matrix);
-    }
-
     set statePosition(index) {
         if (!(Number.isInteger(index) && index >= 0 && index <= this.#states.length)) throw Error("Invalid Index");
         else {
@@ -103,7 +88,6 @@ class GameOfLife {
                 this.#states.push(this.currentState.nextState);
             }
             this.#statePosition = index;
-            this.display();
         }
     }
 }
