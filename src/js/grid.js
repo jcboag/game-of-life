@@ -8,7 +8,6 @@ class CanvasGridEngine {
         this.canvas = canvasNode;
         if (!this.canvas) throw Error("No canvas element found");
         this.ctx = this.canvas.getContext('2d');
-
     }
 
     // Needs to be re initialized anytime the number of squares 
@@ -64,13 +63,15 @@ class CanvasGridEngine {
 class Grid {
     #state;
 
+    static blankState = (m,n) => Matrix.map(Matrix.getNullMatrix(m,n), _ => 'white' );
+
     constructor(el=document.querySelector('canvas')) {
         this.gridEngine = new CanvasGridEngine(el);
     }
 
     init(initialState,gridLines=false) {
         this.gridLines = gridLines;
-        initialState = initialState || Matrix.getNullMatrix(DEFAULT_GRID_HEIGHT,DEFAULT_GRID_HEIGHT);
+        initialState = (initialState || Grid.blankState(DEFAULT_GRID_HEIGHT,DEFAULT_GRID_HEIGHT));
         [this.rows, this.columns] = Matrix.getDimensions(initialState);
         this.gridEngine.init(this.rows,this.columns);
 
@@ -108,12 +109,11 @@ class Grid {
         this.clear();
         if (state) this.#state = state;
         Matrix.forEach(this.#state, (a,index) => this.#setSquareRGBA(index,a));
-        if (this.gridLines) this.addGridLines();
+        if(this.gridLines === true) this.addGridLines();
     }
 
     clear() {
         if (!this.#state) this.#state = [];;
         this.gridEngine.clearGrid();
     }
-
 }
