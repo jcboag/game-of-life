@@ -9,7 +9,6 @@ const Playback = {
         this.startStopButton = document.querySelector('#startStop');
         this.rewindButton = document.querySelector('#rewind');
         this.forwardButton = document.querySelector('#forward');
-        // TODO Implement Random
         this.randomButton = document.querySelector('#random');
         this.resetButton = document.querySelector('#reset');
 
@@ -93,6 +92,7 @@ const Playback = {
 const GridManipulations = {
     init() {
         this.initGridLines();
+        this.initScaling();
     },
     initGridLines() {
         const gridLinesCheckbox = document.getElementById('gridLines');
@@ -115,7 +115,30 @@ const GridManipulations = {
         const gridLinesCheckbox = document.getElementById("gridLines");
         gridLinesCheckbox.checked = !grid.gridLines;
         GridManipulations.setGridLines();
-    }
+    },
+    initScaling() {
+        const scaleDiv = document.getElementById('scale');
+        const resetSizeButton = scaleDiv.querySelector('#resetSize');
+        const setScaleButton = scaleDiv.querySelector('#setScale');
+        const scaleFactorInput = scaleDiv.querySelector('#scaleFactor');
+
+        const setScale = scaleFactor => {  
+            grid.rescale(parseFloat(scaleFactor));
+            scaleFactorInput.value = scaleFactor;
+            localStorage.setItem('scaleFactor', JSON.stringify(scaleFactorInput.value));
+        }
+
+        resetSizeButton.onclick = _ => {
+            setScale(1);
+        }
+
+        setScaleButton.onclick = _ => {
+            setScale(scaleFactorInput.value);
+        }
+
+        const initValue = scaleFactorInput.value = parseFloat(JSON.parse(localStorage.getItem('scaleFactor'))) || 1;
+        setScale(initValue);
+    },
 }
 
 const KeyboardShortcuts = {
@@ -159,7 +182,7 @@ function initializeGameOfLifeClass() {
     // matrix for input into `Grid`.
     Object.defineProperty( GameOfLife.prototype, 'monochrome' , {
         get() {
-            return this.currentState.map( a => a ? 'white' : 'black' ).matrix
+            return this.currentState.map( a => a ? 'black' : 'white' ).matrix
         }
     });
 

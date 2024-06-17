@@ -4,17 +4,46 @@ const DEFAULT_GRID_HEIGHT = 100;
 // While the `Grid` itself only deals with `squares`.
 
 class CanvasGridEngine {
+
     constructor(canvasNode) {
         this.canvas = canvasNode;
         if (!this.canvas) throw Error("No canvas element found");
         this.ctx = this.canvas.getContext('2d');
     }
 
-    // Needs to be re initialized anytime the number of squares 
-    // or the size of the grid changes
+    // Needs to be re initialized anytime the number of squares changes
     init(m,n) {
-        this.squareWidth = this.canvas.width / n;
-        this.squareHeight = this.canvas.height / m;
+        this.rows = m;
+        this.cols = n;
+        this.originalHeight = this.canvasHeight;
+        this.originalWidth = this.canvasWidth;
+    }
+
+    get canvasHeight() {
+        return this.canvas.height
+    }
+
+    set canvasHeight(height) {
+        this.canvas.height = height;
+    }
+
+    get canvasWidth() {
+        return this.canvas.width
+    }
+
+    set canvasWidth(width) {
+        this.canvas.width = width;
+    }
+
+    get squareWidth() {
+        // squareWidth * numRowSquares = canvasWidth
+        return this.canvasWidth / this.cols
+    }
+
+    get squareHeight() {
+        // squareHeight * numColSquares = canvasHeight
+        return this.canvasHeight / this.rows
+
     }
 
     get offset() {
@@ -74,6 +103,14 @@ class CanvasGridEngine {
 
     squareFromCanvasPosition([x,y]) {
         return [ x / this.squareWidth, y / this.squareHeight ].map(a => Math.floor(a));
+    }
+    #resize(w,h) {
+        this.canvas.width = w;
+        this.canvas.height = h;
+    }
+    rescale(scaleFactor) {
+        if (!parseFloat(scaleFactor)) throw Error("Invalid scale factor");
+        this.#resize( this.originalWidth * scaleFactor, this.originalHeight * scaleFactor );
     }
 }
 
@@ -140,5 +177,10 @@ class Grid {
     squareFromPoint([x,y]){
         const canvasPosition = this.gridEngine.canvasPositionFromPoint([x,y]);
         return canvasPosition ? this.gridEngine.squareFromCanvasPosition(canvasPosition) : null;
+    }
+
+    rescale(scaleFactor) {
+        this.gridEngine.rescale(scaleFactor);
+        this.render();
     }
 }
