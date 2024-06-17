@@ -123,7 +123,7 @@ const GridManipulations = {
         const scaleFactorInput = scaleDiv.querySelector('#scaleFactor');
 
         const setScale = scaleFactor => {  
-            grid.rescale(parseFloat(scaleFactor));
+            grid.setScale(parseFloat(scaleFactor));
             scaleFactorInput.value = scaleFactor;
             localStorage.setItem('scaleFactor', JSON.stringify(scaleFactorInput.value));
         }

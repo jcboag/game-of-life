@@ -104,13 +104,13 @@ class CanvasGridEngine {
     squareFromCanvasPosition([x,y]) {
         return [ x / this.squareWidth, y / this.squareHeight ].map(a => Math.floor(a));
     }
-    #resize(w,h) {
+    #setSize(w,h) {
         this.canvas.width = w;
         this.canvas.height = h;
     }
-    rescale(scaleFactor) {
+    setScale(scaleFactor) {
         if (!parseFloat(scaleFactor)) throw Error("Invalid scale factor");
-        this.#resize( this.originalWidth * scaleFactor, this.originalHeight * scaleFactor );
+        this.#setSize( this.originalWidth * scaleFactor, this.originalHeight * scaleFactor );
     }
 }
 
@@ -179,8 +179,8 @@ class Grid {
         return canvasPosition ? this.gridEngine.squareFromCanvasPosition(canvasPosition) : null;
     }
 
-    rescale(scaleFactor) {
-        this.gridEngine.rescale(scaleFactor);
+    setScale(scaleFactor) {
+        this.gridEngine.setScale(scaleFactor);
         this.render();
     }
 }
