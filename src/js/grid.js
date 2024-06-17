@@ -17,13 +17,23 @@ class CanvasGridEngine {
         this.squareHeight = this.canvas.height / m;
     }
 
+    get offset() {
+        const rect = this.canvas.getBoundingClientRect();
+        const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+
+        return {
+            x: rect.left + scrollLeft,
+            y: rect.top + scrollTop,
+        }
+    }
+
     #addLine(startPos, endPos) {
         this.ctx.beginPath();
         this.ctx.moveTo(...startPos);
         this.ctx.lineTo(...endPos);
         this.ctx.stroke();
     }
-
 
     #clear(x,y,w,h) {
         this.ctx.clearRect(x,y,w,h);
@@ -54,6 +64,16 @@ class CanvasGridEngine {
 
     clearGrid() {
         this.#clear(0,0,this.canvas.width,this.canvas.height);
+    }
+
+    canvasPositionFromPoint([x,y]) {
+        x = x - this.offset.x;
+        y = y - this.offset.y;
+        return  x >= 0 && x < this.canvas.width && y >= 0 && y < this.canvas.height ? [x,y] : null;
+    }
+
+    squareFromCanvasPosition([x,y]) {
+        return [ x / this.squareWidth, y / this.squareHeight ].map(a => Math.floor(a));
     }
 }
 
@@ -115,5 +135,10 @@ class Grid {
     clear() {
         if (!this.#state) this.#state = [];;
         this.gridEngine.clearGrid();
+    }
+
+    squareFromPoint([x,y]){
+        const canvasPosition = this.gridEngine.canvasPositionFromPoint([x,y]);
+        return canvasPosition ? this.gridEngine.squareFromCanvasPosition(canvasPosition) : null;
     }
 }
