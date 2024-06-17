@@ -84,7 +84,9 @@ const Playback = {
     },
     random() {
         if (this.loopInProgress()) this.stop();
-        g.init(new GameOfLifeMatrix());
+        g = new GameOfLife();
+        g.init();
+        grid.init(g.monochrome);
     }
 };
 
