@@ -1,5 +1,5 @@
 const DEFAULT_UPDATE_RATE = 90;
-const DEFAULT_MATRIX_SIZE = 50;
+const DEFAULT_SIZE = 50;
 
 var g,grid;
 
@@ -190,11 +190,11 @@ function initializeGameOfLifeClass() {
 
 }
 
+
 function init() {
 
     initializeGameOfLifeClass();
-    g = new GameOfLife(); 
-    g.init();
+    g = new GameOfLife(DEFAULT_SIZE); 
 
     grid = new Grid(); 
     grid.init(g.monochrome);

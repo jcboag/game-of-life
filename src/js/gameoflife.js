@@ -8,20 +8,15 @@ class GameOfLifeMatrix extends Matrix {
     static randomInitialState(size) {
         return new Matrix(Matrix.getNullMatrix(size, size)).map(() => Math.random() > 0.5 ? 1 : 0);
     }
-
-    // overPopNumber: if the surrounding population is greater than this, the cell dies
-    // underPopNumber: if the surrounding population is less than this, the cell dies
-    constructor(state = null, options={overPopNumber:3,underPopNumber:2}) {
-        if (!state) state = GLOBALS.DEFAULT_LENGTH;
+    constructor(state = null) {
         if (Number.isInteger(state)) state = GameOfLifeMatrix.randomInitialState(state).matrix;
-
         state = state instanceof Matrix ? state.matrix : state;
-
+        if (!Matrix.isMatrixLike(state)) throw Error("Invalid input");
         super(state);
-
-        this.options = options;
-        this.overPopNumber = options.overPopNumber;
-        this.underPopNumber = options.underPopNumber;
+        // A cell dies if it has more neighbors than overPopNumber or 
+        // less neighbors than underPopNumber
+        this.overPopNumber = 3;
+        this.underPopNumber = 2;
     }
 
     get aliveCells() {
@@ -55,7 +50,7 @@ class GameOfLifeMatrix extends Matrix {
     }
 
     get nextState() {
-        return new GameOfLifeMatrix(this.map((_, cell) => this.isAliveNextState(cell) ? 1 : 0), this.options);
+        return new GameOfLifeMatrix(this.map((_, cell) => this.isAliveNextState(cell) ? 1 : 0));
     }
 
     get reachedSteadyState() {
@@ -72,7 +67,10 @@ class GameOfLife {
     }
 
     init(state) {
-        state = state || new GameOfLifeMatrix();
+        if (Number.isInteger(state) && state > 0 || Matrix.isMatrixLike(state)) state = new GameOfLifeMatrix(state);
+        else if (state?.matrix) state = new GameOfLife( state.matrix );
+        else throw Error("Incorrect Input into `GameOfLife` contstructor");
+
         this.#states = [ state ];
         this.#statePosition = 0;
     }
