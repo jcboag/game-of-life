@@ -3,12 +3,13 @@ const DEFAULT_GRID_HEIGHT = 100;
 // The `GridEngine` is responsible for the lower level details of the grid,
 // While the `Grid` itself only deals with `squares`.
 
-class CanvasGridEngine {
 
+class CanvasGridEngine {
+    #ctx;
     constructor(canvasNode) {
         this.canvas = canvasNode;
         if (!this.canvas) throw Error("No canvas element found");
-        this.ctx = this.canvas.getContext('2d');
+        this.#ctx = this.canvas.getContext('2d');
     }
 
     // Needs to be re initialized anytime the number of squares changes
@@ -41,7 +42,7 @@ class CanvasGridEngine {
     }
 
     get squareHeight() {
-        // squareHeight * numColSquares = canvasHeight
+        // squareHeight * numColSquares = canvafsHeight
         return this.canvasHeight / this.rows
 
     }
@@ -58,19 +59,14 @@ class CanvasGridEngine {
     }
 
     #addLine(startPos, endPos) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(...startPos);
-        this.ctx.lineTo(...endPos);
-        this.ctx.stroke();
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(...startPos);
+        this.#ctx.lineTo(...endPos);
+        this.#ctx.stroke();
     }
 
     #clear(x,y,w,h) {
-        this.ctx.clearRect(x,y,w,h);
-    }
-
-    #fill(x,y,w,h,fillStyle) {
-        this.ctx.fillStyle = fillStyle;
-        this.ctx.fillRect(x,y,w,h);
+        this.#ctx.clearRect(x,y,w,h);
     }
 
     addLineAcrossCanvas(axis,p) {
@@ -86,11 +82,6 @@ class CanvasGridEngine {
         });
     }
 
-    fillSquare([i,j],fillStyle) {
-        const [ x, y ] = [i * this.squareWidth, j * this.squareHeight];
-        this.#fill(x,y,this.squareWidth,this.squareHeight,fillStyle);
-    }
-
     clearGrid() {
         this.#clear(0,0,this.canvas.width,this.canvas.height);
     }
@@ -104,13 +95,28 @@ class CanvasGridEngine {
     squareFromCanvasPosition([x,y]) {
         return [ x / this.squareWidth, y / this.squareHeight ].map(a => Math.floor(a));
     }
+
     #setSize(w,h) {
         this.canvas.width = w;
         this.canvas.height = h;
     }
+
     setScale(scaleFactor) {
         if (!parseFloat(scaleFactor)) throw Error("Invalid scale factor");
         this.#setSize( this.originalWidth * scaleFactor, this.originalHeight * scaleFactor );
+    }
+
+    getPointRGBA([x,y]) {
+        const [r,g,b,a] = this.#ctx.getImageData(x,y,1,1)?.data;
+        return [r,g,b,a];
+    }
+
+    fillRect(x,y,w,h,fillStyle) {
+        this.#ctx.fillStyle = fillStyle;
+        this.#ctx.fillRect(x,y,w,h);
+    }
+    clearRect(x,y,w,h) {
+        this.#ctx.clearRect(x,y,w,h);
     }
 }
 
@@ -135,8 +141,28 @@ class Grid {
         this.render(initialState);
     }
 
-    #setSquareRGBA([i,j],fillStyle) {
-        this.gridEngine.fillSquare([i,j],fillStyle);
+    get squareWidth() {
+        return this.gridEngine.squareWidth;
+    }
+
+    get squareHeight() {
+        return this.gridEngine.squareHeight;
+    }
+
+    getSquarePosition([i,j]) {
+        return [this.squareWidth * i , this.squareHeight * j];
+    }
+
+    midPoint([i,j]) {
+        return [ this.squareWidth * ( 2 * i + 1 ) / 2, this.squareHeight * ( 2 * j + 1 ) / 2 ];
+    }
+
+    getSquareColor([i,j]) {
+        return this.gridEngine.getPointRGBA(this.midPoint([i,j]));
+    }
+
+    setSquareColor([i,j], color) {
+        this.gridEngine.fillRect(...this.getSquarePosition([i,j]), this.squareWidth, this.squareHeight, color);
     }
 
     // axis: x or y
@@ -165,7 +191,7 @@ class Grid {
     render(state) {
         this.clear();
         if (state) this.#state = state;
-        Matrix.forEach(this.#state, (a,index) => this.#setSquareRGBA(index,a));
+        Matrix.forEach(this.#state, (a,index) => this.setSquareColor(index, a))
         if(this.gridLines === true) this.addGridLines();
     }
 
