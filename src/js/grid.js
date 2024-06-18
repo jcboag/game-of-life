@@ -114,10 +114,6 @@ class CanvasGridEngine {
     fillRect(x,y,w,h,fillStyle) {
         this.#ctx.fillStyle = fillStyle;
         this.#ctx.fillRect(x,y,w,h);
-
-        if (fillStyle === null) {
-            this.clearRect(...arguments)
-        }
     }
 
     clearRect(x,y,w,h) {
@@ -140,9 +136,10 @@ class Grid {
     init(initialState,gridLines) {
         if (!initialState) initialState = DEFAULT_GRID_HEIGHT;
         const state = Number.isInteger(initialState) ? Grid.blankState(initialState,initialState) : initialState;
+        [this.rows, this.columns] = Matrix.getDimensions(state);
+        this.nullState = Number.isInteger(initialState) ? state : Grid.blankState(this.rows,this.columns);
         if (!Matrix.isMatrixLike(state)) throw Error("Input into Grid must be a Matrix-like object");
         this.gridLines = gridLines;
-        [this.rows, this.columns] = Matrix.getDimensions(state);
         this.gridEngine.init(this.rows,this.columns);
         this.render(state);
     }
@@ -168,7 +165,12 @@ class Grid {
     }
 
     setSquareColor([i,j], color) {
-        this.gridEngine.fillRect(...this.getSquarePosition([i,j]), this.squareWidth, this.squareHeight, color);
+        if (color === null) this.clearSquare([i,j]);
+        else this.gridEngine.fillRect(...this.getSquarePosition([i,j]), this.squareWidth, this.squareHeight, color);
+    }
+
+    clearSquare([i,j]) {
+        this.gridEngine.clearRect(...this.getSquarePosition([i,j]),this.squareWidth,this.squareHeight);
     }
 
     // axis: x or y
@@ -194,16 +196,19 @@ class Grid {
         this.render(this.#state);
     }
 
-    render(state) {
-        this.clear();
+    render(state,gridLines=this.gridLines) {
+        this.clear(false);
         if (state) this.#state = state;
         Matrix.forEach(this.#state, (a,index) => this.setSquareColor(index, a))
-        if(this.gridLines === true) this.addGridLines();
+        if(gridLines === true) this.addGridLines();
+        else (this.gridLines = false);
     }
 
-    clear() {
-        if (!this.#state) this.#state = [];;
+    clear(gridLines=this.gridLines) {
         this.gridEngine.clearGrid();
+        if (!this.#state) this.#state = this.nullState;
+        if (gridLines) this.addGridLines();
+        else this.gridLines = false;
     }
 
     squareFromPoint([x,y]){
