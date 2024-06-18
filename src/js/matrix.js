@@ -1,7 +1,11 @@
 class Matrix {
     // An mxn "Matrix" is an array of length n where every entry is an array of length m.
     static isMatrixLike(object) {
-        return object?.every( el => typeof el === 'number' ) || (Array.isArray(object) && object.length >= 0 && object.every(row => Array.isArray(row) && row.length === object[0].length));
+        try {
+            return object?.every( el => typeof el === 'number' ) || (Array.isArray(object) && object.length >= 0 && object.every(row => Array.isArray(row) && row.length === object[0].length));
+        } catch { // Object is a non-number without an every property
+            return false;
+        }
     }
 
     // Returns all adjacent indices (at  the sides and the diagonals )
