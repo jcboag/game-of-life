@@ -114,7 +114,12 @@ class CanvasGridEngine {
     fillRect(x,y,w,h,fillStyle) {
         this.#ctx.fillStyle = fillStyle;
         this.#ctx.fillRect(x,y,w,h);
+
+        if (fillStyle === null) {
+            this.clearRect(...arguments)
+        }
     }
+
     clearRect(x,y,w,h) {
         this.#ctx.clearRect(x,y,w,h);
     }
@@ -126,19 +131,20 @@ class CanvasGridEngine {
 class Grid {
     #state;
 
-    static blankState = (m,n) => Matrix.map(Matrix.getNullMatrix(m,n), _ => 'white' );
+    static blankState = (m,n) => Matrix.getNullMatrix(m,n);
 
     constructor(el=document.querySelector('canvas')) {
         this.gridEngine = new CanvasGridEngine(el);
     }
 
-    init(initialState,gridLines=false) {
+    init(initialState,gridLines) {
+        if (!initialState) initialState = DEFAULT_GRID_HEIGHT;
+        const state = Number.isInteger(initialState) ? Grid.blankState(initialState,initialState) : initialState;
+        if (!Matrix.isMatrixLike(state)) throw Error("Input into Grid must be a Matrix-like object");
         this.gridLines = gridLines;
-        initialState = (initialState || Grid.blankState(DEFAULT_GRID_HEIGHT,DEFAULT_GRID_HEIGHT));
-        [this.rows, this.columns] = Matrix.getDimensions(initialState);
+        [this.rows, this.columns] = Matrix.getDimensions(state);
         this.gridEngine.init(this.rows,this.columns);
-
-        this.render(initialState);
+        this.render(state);
     }
 
     get squareWidth() {
