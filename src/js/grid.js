@@ -46,12 +46,10 @@ class CanvasGridEngine {
 
     get offset() {
         const rect = this.canvas.getBoundingClientRect();
-        const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
-        const scrollTop = window.scrollY || document.documentElement.scrollTop;
 
         return {
-            x: rect.left + scrollLeft,
-            y: rect.top + scrollTop,
+            x: rect.left,
+            y: rect.top,
         }
     }
 
@@ -70,13 +68,6 @@ class CanvasGridEngine {
         axis = axis.toLowerCase();
         if (axis === 'x') this.#addLine( [0,p], [this.canvas.width,p]);
         if (axis === 'y') this.#addLine( [p,0], [p,this.canvas.height]);
-    }
-
-    render(matrix) {
-        this.clearGrid();
-        Matrix.forEach(matrix, (color, [i,j]) => { 
-            this.fillSquare([i,j], color);
-        });
     }
 
     clearGrid() {
@@ -124,7 +115,11 @@ class Colorizer {
         black: '#000000'
     }
 
-    static monochrome = matrix => Matrix.map( matrix, a => a ? this.colors.white: this.colors.black)
+    static rgbaArrayToString(array) {
+        return `rgba(${[array.join(',')]})`
+    }
+
+    static monochrome = (matrix,invert=false) => Matrix.map( invert ? Matrix.map(matrix, a => !a) : matrix, a => a ? this.colors.black: this.colors.white )
 }
 
 // Deals with higher level operations of the grid (square level)
@@ -205,14 +200,9 @@ class Grid {
         return this.#gridLines;
     }
 
-
-    // By default, render with monochrome and last gridLined state
     render(state, gridLines=this.gridLines) {
-
         if (!state) state = this.#state;
-
         Matrix.forEach(state, (a,index) => this.setSquareColor(index, a));
-
         if (gridLines) {
             this.addGridLines();
             this.#gridLines = true;
