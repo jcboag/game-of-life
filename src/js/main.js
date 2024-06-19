@@ -164,12 +164,17 @@ const KeyboardShortcuts = {
     }
 };
 
+function colorizeMatrix(matrix,method) {
+    // Monochrome
+    if (!method) return Matrix.map( matrix, a => a ? Colorizer.colors.black : Colorizer.colors.white );
+}
+
 function getInitialState() {
     return new GameOfLife(DEFAULT_SIZE);
 }
 
 function render(game) {
-    grid.render(Colorizer.monochrome(game.currentState.matrix), grid.gridLines );
+    grid.render(colorizeMatrix(game.currentState.matrix), grid.gridLines );
 }
 
 function setStatePosition(game,pos) {
