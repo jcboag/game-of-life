@@ -1,5 +1,3 @@
-const DEFAULT_GRID_HEIGHT = 100;
-
 // The `GridEngine` is responsible for the lower level details of the grid,
 // While the `Grid` itself only deals with `squares`.
 
@@ -126,6 +124,7 @@ class CanvasGridEngine {
 // `Grid` can render matrices of RGBA values
 class Grid {
     #state;
+    #gridLines;
 
     static blankState = (m,n) => Matrix.getNullMatrix(m,n);
 
@@ -133,15 +132,16 @@ class Grid {
         this.gridEngine = new CanvasGridEngine(el);
     }
 
-    init(initialState,gridLines) {
-        if (!initialState) initialState = DEFAULT_GRID_HEIGHT;
-        const state = Number.isInteger(initialState) ? Grid.blankState(initialState,initialState) : initialState;
-        [this.rows, this.columns] = Matrix.getDimensions(state);
-        this.nullState = Number.isInteger(initialState) ? state : Grid.blankState(this.rows,this.columns);
-        if (!Matrix.isMatrixLike(state)) throw Error("Input into Grid must be a Matrix-like object");
-        this.gridLines = gridLines;
+    init([m,n],gridLines,initialState) {
+        [this.rows, this.columns] = [m,n];
+
         this.gridEngine.init(this.rows,this.columns);
-        this.render(state);
+
+        this.nullState = Number.isInteger(initialState) ? state : Grid.blankState(this.rows,this.columns);
+
+        this.#state = (initialState && Matrix.isMatrixLike(initialState)) ? initialState : this.nullState;
+
+        this.render(this.#state, gridLines);
     }
 
     get squareWidth() {
@@ -187,28 +187,35 @@ class Grid {
         for (let j=0; j < this.columns; j++ ) {
             this.#addLine('y',j)
         }
-        this.gridLines=true;
+        this.#gridLines = true;
     }
 
     // Just re-render the stored state
     removeGridLines() {
-        this.gridLines = false;
-        this.render(this.#state);
+        this.render(this.#state,false);
+        this.#gridLines = false;
     }
 
-    render(state,gridLines=this.gridLines) {
-        this.clear(false);
-        if (state) this.#state = state;
-        Matrix.forEach(this.#state, (a,index) => this.setSquareColor(index, a))
-        if(gridLines === true) this.addGridLines();
-        else (this.gridLines = false);
+    get gridLines() {
+        return this.#gridLines;
     }
 
-    clear(gridLines=this.gridLines) {
+    // By default, render with whatever the last gridlined state was
+    render(state, gridLines=this.gridLines) {
+        if (!state) state = this.#state;
+        this.clear();
+        Matrix.forEach(state, (a,index) => this.setSquareColor(index, a));
+        if (gridLines) {
+            this.addGridLines();
+            this.#gridLines = true;
+        } else {
+            this.#gridLines = false;
+        }
+
+    }
+
+    clear() {
         this.gridEngine.clearGrid();
-        if (!this.#state) this.#state = this.nullState;
-        if (gridLines) this.addGridLines();
-        else this.gridLines = false;
     }
 
     squareFromPoint([x,y]){

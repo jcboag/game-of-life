@@ -98,6 +98,7 @@ const GridManipulations = {
     },
     initGridLines() {
         const gridLinesCheckbox = document.getElementById('gridLines');
+
         gridLinesCheckbox.checked = JSON.parse(localStorage.getItem('gridLines'));
 
         this.setGridLines();
@@ -176,7 +177,7 @@ function initializeGameOfLifeClass() {
     Object.defineProperty( GameOfLife.prototype, 'statePosition', {
         set(statePosition) { 
             statePositionSetter.call(this,statePosition);
-            grid.render(grid.render(g.monochrome));
+            grid.render(g.monochrome);
         }
     });
 
@@ -190,16 +191,17 @@ function initializeGameOfLifeClass() {
 
 }
 
-
 function init() {
-
     initializeGameOfLifeClass();
     g = new GameOfLife(DEFAULT_SIZE); 
 
-    grid = new Grid(); 
-    grid.init(g.monochrome);
+    grid = new Grid();
 
-    GridManipulations.init();
+    grid.init( [DEFAULT_SIZE, DEFAULT_SIZE],  true )
+
+    grid.render(g.monochrome);
+
+    // GridManipulations.init();
     KeyboardShortcuts.init();
     Playback.init();
 }

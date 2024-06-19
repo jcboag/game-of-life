@@ -1,8 +1,3 @@
-const GLOBALS = {
-    DEFAULT_LENGTH: 150,
-    DEFAULT_GRID_SIZE: 150, // Each 'Game Of Life' Matrix is an nxn grid
-}
-
 // Matrix with only ones and zeros, an algorithm to classify entries, and a transition function.
 class GameOfLifeMatrix extends Matrix {
     static randomInitialState(size) {
