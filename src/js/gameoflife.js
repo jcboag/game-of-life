@@ -52,26 +52,17 @@ class GameOfLifeMatrix extends Matrix {
     get nextState() {
         return new GameOfLifeMatrix(this.map((_, cell) => this.isAliveNextState(cell) ? 1 : 0));
     }
-
-    get reachedSteadyState() {
-        return this.equals(this.nextState);
-    }
-
 }
 
 class GameOfLife {
     #states;
     #statePosition;
     constructor(initialState) {
-        this.init(initialState);
-    }
-
-    init(state) {
-        if (Number.isInteger(state) && state > 0 || Matrix.isMatrixLike(state)) state = new GameOfLifeMatrix(state);
-        else if (state?.matrix) state = new GameOfLife( state.matrix );
+        if (Number.isInteger(initialState) && initialState > 0 || Matrix.isMatrixLike(initialState)) initialState = new GameOfLifeMatrix(initialState);
+        else if (initialState?.matrix) initialState = new GameOfLife( state.matrix );
         else throw Error("Incorrect Input into `GameOfLife` contstructor");
 
-        this.#states = [ state ];
+        this.#states = [ initialState ];
         this.#statePosition = 0;
     }
 
