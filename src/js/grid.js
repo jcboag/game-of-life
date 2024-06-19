@@ -1,7 +1,6 @@
 // The `GridEngine` is responsible for the lower level details of the grid,
 // While the `Grid` itself only deals with `squares`.
 
-
 class CanvasGridEngine {
     #ctx;
     constructor(canvasNode) {
@@ -119,9 +118,18 @@ class CanvasGridEngine {
     }
 }
 
+class Colorizer {
+    static colors = {
+        white: '#ffffff',
+        black: '#000000'
+    }
+
+    static monochrome = matrix => Matrix.map( matrix, a => a ? this.colors.white: this.colors.black)
+}
 
 // Deals with higher level operations of the grid (square level)
-// `Grid` can render matrices of RGBA values
+// `Grid` can render matrices of hex/RGBA/color values
+
 class Grid {
     #state;
     #gridLines;
@@ -132,15 +140,12 @@ class Grid {
         this.gridEngine = new CanvasGridEngine(el);
     }
 
-    init([m,n],gridLines,initialState) {
+    init([m,n],gridLines,initialState,colorizer=Colorizer.monochrome) {
         [this.rows, this.columns] = [m,n];
-
         this.gridEngine.init(this.rows,this.columns);
-
+        this.colorize = colorizer;
         this.nullState = Number.isInteger(initialState) ? state : Grid.blankState(this.rows,this.columns);
-
         this.#state = (initialState && Matrix.isMatrixLike(initialState)) ? initialState : this.nullState;
-
         this.render(this.#state, gridLines);
     }
 
@@ -200,18 +205,21 @@ class Grid {
         return this.#gridLines;
     }
 
-    // By default, render with whatever the last gridlined state was
+
+    // By default, render with monochrome and last gridLined state
     render(state, gridLines=this.gridLines) {
+
         if (!state) state = this.#state;
-        this.clear();
+
         Matrix.forEach(state, (a,index) => this.setSquareColor(index, a));
+
         if (gridLines) {
             this.addGridLines();
             this.#gridLines = true;
         } else {
             this.#gridLines = false;
         }
-
+        this.#state = state;
     }
 
     clear() {

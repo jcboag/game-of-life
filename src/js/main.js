@@ -5,6 +5,7 @@ var g,grid;
 
 const Playback = {
     init() {
+        this.initialized = true;
         this.intervalId = null;
         this.startStopButton = document.querySelector('#startStop');
         this.rewindButton = document.querySelector('#rewind');
@@ -20,13 +21,12 @@ const Playback = {
     },
     startLoop(maxLoop=Infinity,updateRate=DEFAULT_UPDATE_RATE) {
         let count = 0;
-
         const updateState = () => {
             if (count >= maxLoop) {
                 this.stop();
                 return;
             }
-            g.statePosition++;
+            nextState(g);
             count++;
         };
         this.intervalId = setInterval(updateState, updateRate);
@@ -62,9 +62,9 @@ const Playback = {
             return;
         }
         try {
-            g.statePosition--;
+            previousState(g);
         } catch {
-            g.statePosition = 0;
+            setStatePosition(0);
         }
     },
     forward() {
@@ -73,34 +73,32 @@ const Playback = {
             return;
         }
         try {
-            g.statePosition++;
+            nextState(g);
         } catch {
-            g.statePosition--;
+            previousState(g);
         }
     },
     reset() {
         if (this.loopInProgress()) this.stop();
-        g.statePosition = 0;
+        setStatePosition(g,0);
     },
     random() {
         if (this.loopInProgress()) this.stop();
-        g = new GameOfLife();
-        g.init();
-        grid.init(g.monochrome);
+        g = getInitialState(DEFAULT_SIZE);
+        initializeGrid(g);
     }
 };
 
 
 const GridManipulations = {
     init() {
+        this.initialized = true;
         this.initGridLines();
         this.initScaling();
     },
     initGridLines() {
         const gridLinesCheckbox = document.getElementById('gridLines');
-
         gridLinesCheckbox.checked = JSON.parse(localStorage.getItem('gridLines'));
-
         this.setGridLines();
         document.addEventListener('input', e => {
             if (e.target.id === 'gridLines') this.setGridLines();
@@ -146,6 +144,7 @@ const GridManipulations = {
 
 const KeyboardShortcuts = {
     init() {
+        this.initialized = true;
         document.addEventListener('keydown', this.handleKeyDown.bind(this));
     },
     keyMap: {
@@ -166,42 +165,35 @@ const KeyboardShortcuts = {
 };
 
 function getInitialState() {
-
-    return new GameOfLifeMatrix();
+    return new GameOfLife(DEFAULT_SIZE);
 }
 
-function initializeGameOfLifeClass() {
+function render(game) {
+    grid.render(Colorizer.monochrome(game.currentState.matrix), grid.gridLines );
+}
 
-    // Deocrate the setter `GameOfLife.statePosition` so changes in state are rendered anytime it changes
-    const statePositionSetter = Object.getOwnPropertyDescriptor(GameOfLife.prototype, 'statePosition').set;
-    Object.defineProperty( GameOfLife.prototype, 'statePosition', {
-        set(statePosition) { 
-            statePositionSetter.call(this,statePosition);
-            grid.render(g.monochrome);
-        }
-    });
+function setStatePosition(game,pos) {
+    game.statePosition = pos;
+    render(game);
+}
 
-    // Add a 'mononchrome' property to `GameOfLife` which gives its current state as as a monochrome
-    // matrix for input into `Grid`.
-    Object.defineProperty( GameOfLife.prototype, 'monochrome' , {
-        get() {
-            return this.currentState.map( a => a ? 'black' : 'white' ).matrix
-        }
-    });
+function nextState(game) {
+    setStatePosition(game, ++game.statePosition);
+}
 
+function previousState(game) {
+    setStatePosition(game, --game.statePosition);
+}
+
+function initializeGrid(game) {
+    grid.init(Matrix.getDimensions(game.currentState.matrix), false);
+    render(game);
 }
 
 function init() {
-    initializeGameOfLifeClass();
-    g = new GameOfLife(DEFAULT_SIZE); 
-
     grid = new Grid();
-
-    grid.init( [DEFAULT_SIZE, DEFAULT_SIZE],  true )
-
-    grid.render(g.monochrome);
-
-    // GridManipulations.init();
+    g = getInitialState();
+    initializeGrid(g);
     KeyboardShortcuts.init();
     Playback.init();
 }
