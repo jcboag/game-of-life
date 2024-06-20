@@ -118,7 +118,6 @@ class Colorizer {
     static rgbaArrayToString(array) {
         return `rgba(${[array.join(',')]})`
     }
-
     static monochrome = (matrix,invert=false) => Matrix.map( invert ? Matrix.map(matrix, a => !a) : matrix, a => a ? this.colors.black: this.colors.white )
 }
 
@@ -135,10 +134,9 @@ class Grid {
         this.gridEngine = new CanvasGridEngine(el);
     }
 
-    init([m,n],gridLines,initialState,colorizer=Colorizer.monochrome) {
+    init([m,n],gridLines,initialState) {
         [this.rows, this.columns] = [m,n];
         this.gridEngine.init(this.rows,this.columns);
-        this.colorize = colorizer;
         this.nullState = Number.isInteger(initialState) ? state : Grid.blankState(this.rows,this.columns);
         this.#state = (initialState && Matrix.isMatrixLike(initialState)) ? initialState : this.nullState;
         this.render(this.#state, gridLines);
