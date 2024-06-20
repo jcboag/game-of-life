@@ -7,16 +7,15 @@ const Playback = {
     init() {
         this.initialized = true;
         this.intervalId = null;
+
         this.startStopButton = document.querySelector('#startStop');
         this.rewindButton = document.querySelector('#rewind');
         this.forwardButton = document.querySelector('#forward');
-        this.randomButton = document.querySelector('#random');
         this.resetButton = document.querySelector('#reset');
 
         this.startStopButton.onclick = this.toggleStart.bind(this);
         this.rewindButton.onclick = this.rewind.bind(this);
         this.forwardButton.onclick = this.forward.bind(this);
-        this.randomButton.onclick = this.random.bind(this);
         this.resetButton.onclick = this.reset.bind(this);
     },
     startLoop(maxLoop=Infinity,updateRate=DEFAULT_UPDATE_RATE) {
@@ -92,7 +91,6 @@ const Playback = {
 
 const GridManipulations = {
     init() {
-        this.initialized = true;
         this.initGridLines();
         this.initScaling();
     },
@@ -164,6 +162,75 @@ const KeyboardShortcuts = {
     }
 };
 
+function createInitialState(size) {
+
+    const canvas = grid.gridEngine.canvas;
+
+    let squares = [];
+    let firstSquareValue;
+
+    const onMouseMove = e => {
+        const square = grid.squareFromPoint([e.clientX,e.clientY]);
+        if (!square) return;
+
+        if (!squares.includes(JSON.stringify(square))) {
+            if (Matrix.getItem(initialState,square) !== firstSquareValue) {
+                Matrix.setItem(initialState, square, firstSquareValue )
+            }
+            squares.push(JSON.stringify(square));
+        }
+        render();
+    }
+
+    const onMouseDown = e => {
+        squares = [];
+
+        // Toggle the value of the first clicked square
+        const firstSquare = grid.squareFromPoint([e.clientX,e.clientY]);
+
+        if  (firstSquare) {
+            toggleSquare(firstSquare);
+            render();
+        }
+
+        // Use that value as the value to make all other points in
+        // the path of the drag
+        firstSquareValue = firstSquare ? Matrix.getItem(initialState, firstSquare) : 0;
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    }
+
+    const onMouseUp = _ => document.removeEventListener('mousemove', onMouseMove);
+
+    const onSubmit = e => {
+        if (e.code === 'Enter') {
+            document.removeEventListener('keydown', onSubmit);
+            document.removeEventListener('mousedown', onMouseDown);
+            canvas.removeEventListener('click', onGridClick)
+
+            g = new GameOfLife(Matrix.map(initialState, a => a ? 1 : 0 ));
+            Playback.init();
+            Playback.startLoop();
+        }
+    }
+
+    const onGridClick = e => {
+        toggleSquare(grid.squareFromPoint([e.clientX,e.clientY]));
+        render();
+    }
+
+    const toggleSquare = square => Matrix.setItem(initialState, square, !Matrix.getItem(initialState, square) );
+    const initialState = Matrix.map(Matrix.getNullMatrix(size,size), _ => false);
+    const render = _ => grid.render(colorizeMatrix(initialState));
+
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onSubmit);
+
+    grid.init(Matrix.getDimensions(initialState), true);
+
+    render();
+}
+
 function colorizeMatrix(matrix,method) {
     // Monochrome
     if (!method) return Matrix.map( matrix, a => a ? Colorizer.colors.black : Colorizer.colors.white );
@@ -173,13 +240,18 @@ function getInitialState() {
     return new GameOfLife(DEFAULT_SIZE);
 }
 
-function render(game) {
-    grid.render(colorizeMatrix(game.currentState.matrix), grid.gridLines );
+function renderDisplayMatrix(matrix) {
+    grid.render(matrix);
+}
+
+function renderGame(game) {
+    const displayMatrix = colorizeMatrix(game.currentState.matrix);
+    renderDisplayMatrix(displayMatrix)
 }
 
 function setStatePosition(game,pos) {
     game.statePosition = pos;
-    render(game);
+    renderGame(game);
 }
 
 function nextState(game) {
@@ -192,15 +264,27 @@ function previousState(game) {
 
 function initializeGrid(game) {
     grid.init(Matrix.getDimensions(game.currentState.matrix), false);
-    render(game);
+    renderGame(game);
+}
+
+function createRandomState(n) {
+    if (Playback.loopInProgress()) Playback.stop();
+    g = new GameOfLife(n);  
+    renderGame(g);
 }
 
 function init() {
+    const size = 10;
+
     grid = new Grid();
-    g = getInitialState();
-    initializeGrid(g);
+    grid.init([size,size],true);
+
     KeyboardShortcuts.init();
     Playback.init();
+
+    document.getElementById('customState').onclick = _ => createInitialState(size);
+    document.getElementById('randomState').onclick = _ => createRandomState(size);
+
 }
 
 init();

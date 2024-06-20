@@ -7,17 +7,18 @@
     <title>John Conway's Game Of Life</title>
 </head>
 <body>
-
     <h1 id="mainTitle">John Conway's Game Of Life</h1>
-    <canvas id="gameOfLifeGrid" width="1000" height="1000" style="border:1px solid #000000;"></canvas>
+    <canvas id="grid" class="gameOfLife" width="1000" height="1000" style="border:1px solid #000000;"></canvas>
     <div id="playback">
         <button id="startStop">Start</button>
         <button id="rewind">Back</button>
         <button id="forward">Forward</button>
         <button id="reset">Reset</button>
-        <button id="random">Random</button>
     </div>
-
+    <div>
+    <button id="customState">Create Custom State</button>
+    <button id="randomState">Random</button>
+    </div>
     <div id="change">
         <div id="gridLinesDiv"> <input type="checkbox" id="gridLines"> <label for="gridLines">Gridlines</label></div>
         <div id="scale"> 
@@ -27,11 +28,9 @@
             <button id="resetSize">Reset</button>
         </div>
     </div>
-
     <script src="src/js/matrix.js"></script>
     <script src="src/js/grid.js"></script>
     <script src="src/js/gameoflife.js"></script>
     <script src="src/js/main.js"></script>
-
 </body>
 </html>
