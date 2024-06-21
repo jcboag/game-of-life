@@ -18,7 +18,9 @@ const Playback = {
         this.forwardButton.onclick = this.forward.bind(this);
         this.resetButton.onclick = this.reset.bind(this);
     },
+
     startLoop(maxLoop=Infinity,updateRate=DEFAULT_UPDATE_RATE) {
+
         let count = 0;
         const updateState = () => {
             if (count >= maxLoop) {
@@ -31,18 +33,24 @@ const Playback = {
         this.intervalId = setInterval(updateState, updateRate);
     },
     stopLoop() {
+
         if (this.loopInProgress) {
             clearInterval(this.intervalId);
             this.intervalId = null;
         }
     },
     start() {
+        if (!g) {
+            getRandomInitialState(grid.dimensions[0]);
+            return;
+        }
         this.startLoop();
         this.startStopButton.removeEventListener('click', this.start);
         this.startStopButton.addEventListener('click', this.stop);
         this.startStopButton.innerText = 'Stop';
     },
     stop() {
+
         this.stopLoop();
         this.startStopButton.removeEventListener('click', this.stop);
         this.startStopButton.addEventListener('click', this.start);
@@ -81,64 +89,8 @@ const Playback = {
         if (this.loopInProgress()) this.stop();
         setStatePosition(g,0);
     },
-    random() {
-        if (this.loopInProgress()) this.stop();
-        g = getInitialState(DEFAULT_SIZE);
-        initializeGrid(g);
-    }
 };
 
-
-const GridManipulations = {
-    init() {
-        this.initGridLines();
-        this.initScaling();
-    },
-    initGridLines() {
-        const gridLinesCheckbox = document.getElementById('gridLines');
-        gridLinesCheckbox.checked = JSON.parse(localStorage.getItem('gridLines'));
-        this.setGridLines();
-        document.addEventListener('input', e => {
-            if (e.target.id === 'gridLines') this.setGridLines();
-        });
-    },
-    setGridLines() {
-        const gridLinesEnabled = document.getElementById('gridLines').checked;
-        if (gridLinesEnabled) grid.addGridLines();
-        else grid.removeGridLines();
-
-        // Save state for reaload
-        localStorage.setItem('gridLines', JSON.stringify(grid.gridLines));
-    },
-    toggleGridLines() {
-        const gridLinesCheckbox = document.getElementById("gridLines");
-        gridLinesCheckbox.checked = !grid.gridLines;
-        GridManipulations.setGridLines();
-    },
-    initScaling() {
-        const scaleDiv = document.getElementById('scale');
-        const resetSizeButton = scaleDiv.querySelector('#resetSize');
-        const setScaleButton = scaleDiv.querySelector('#setScale');
-        const scaleFactorInput = scaleDiv.querySelector('#scaleFactor');
-
-        const setScale = scaleFactor => {  
-            grid.setScale(parseFloat(scaleFactor));
-            scaleFactorInput.value = scaleFactor;
-            localStorage.setItem('scaleFactor', JSON.stringify(scaleFactorInput.value));
-        }
-
-        resetSizeButton.onclick = _ => {
-            setScale(1);
-        }
-
-        setScaleButton.onclick = _ => {
-            setScale(scaleFactorInput.value);
-        }
-
-        const initValue = scaleFactorInput.value = parseFloat(JSON.parse(localStorage.getItem('scaleFactor'))) || 1;
-        setScale(initValue);
-    },
-}
 
 const KeyboardShortcuts = {
     init() {
@@ -150,7 +102,6 @@ const KeyboardShortcuts = {
         ArrowRight: Playback.forward.bind(Playback),
         ArrowUp: Playback.reset.bind(Playback),
         Space: Playback.toggleStart.bind(Playback),
-        G: GridManipulations.toggleGridLines,
     },
     handleKeyDown(e) {
         let action = this.keyMap[e.code.replace(/Key|Digit/,'')];
@@ -168,6 +119,7 @@ function createInitialState(size) {
 
     let squares = [];
     let firstSquareValue;
+
 
     const onMouseMove = e => {
         const square = grid.squareFromPoint([e.clientX,e.clientY]);
@@ -202,16 +154,11 @@ function createInitialState(size) {
 
     const onMouseUp = _ => document.removeEventListener('mousemove', onMouseMove);
 
-    const onSubmit = e => {
-        if (e.code === 'Enter') {
+    const onSubmit = _ => {
             document.removeEventListener('keydown', onSubmit);
             document.removeEventListener('mousedown', onMouseDown);
             canvas.removeEventListener('click', onGridClick)
-
-            g = new GameOfLife(Matrix.map(initialState, a => a ? 1 : 0 ));
-            Playback.init();
-            Playback.startLoop();
-        }
+            dispatchInitialState(Matrix.map(initialState, a => a ? 1 : 0 )) 
     }
 
     const onGridClick = e => {
@@ -226,9 +173,34 @@ function createInitialState(size) {
     document.addEventListener('mousedown', onMouseDown);
     document.addEventListener('keydown', onSubmit);
 
+    const startStopButton = Playback.startStopButton;
+
+    if (startStopButton) {
+
+        const currentOnClick = startStopButton.onclick;
+
+        if (currentOnClick) {
+            startStopButton.onclick = _ => {
+                onSubmit();
+                currentOnClick();
+                startStopButton.onclick = currentOnClick;
+            }
+        } else {
+            startStopButton.onclick = _ => {
+                onSubmit();
+                startStopButton.onclick = ""
+            }
+        }
+
+    }
+
     grid.init(Matrix.getDimensions(initialState), true);
 
     render();
+}
+
+function getRandomInitialState(size) {
+    dispatchInitialState(GameOfLifeMatrix.randomInitialState(size).matrix);
 }
 
 function colorizeMatrix(matrix,method) {
@@ -236,22 +208,9 @@ function colorizeMatrix(matrix,method) {
     if (!method) return Matrix.map( matrix, a => a ? Colorizer.colors.black : Colorizer.colors.white );
 }
 
-function getInitialState() {
-    return new GameOfLife(DEFAULT_SIZE);
-}
-
-function renderDisplayMatrix(matrix) {
-    grid.render(matrix);
-}
-
-function renderGame(game) {
-    const displayMatrix = colorizeMatrix(game.currentState.matrix);
-    renderDisplayMatrix(displayMatrix)
-}
-
 function setStatePosition(game,pos) {
     game.statePosition = pos;
-    renderGame(game);
+    document.dispatchEvent( new CustomEvent('gameStateChange') )
 }
 
 function nextState(game) {
@@ -262,29 +221,69 @@ function previousState(game) {
     setStatePosition(game, --game.statePosition);
 }
 
-function initializeGrid(game) {
-    grid.init(Matrix.getDimensions(game.currentState.matrix), false);
-    renderGame(game);
+
+function dispatchInitialState(initialState) {
+    document.dispatchEvent( new CustomEvent('initialStateCreated',{detail: {initialState: initialState}}));
 }
 
-function createRandomState(n) {
-    if (Playback.loopInProgress()) Playback.stop();
-    g = new GameOfLife(n);  
-    renderGame(g);
-}
 
 function init() {
-    const size = 10;
+    const size = 100;
 
     grid = new Grid();
     grid.init([size,size],true);
 
-    KeyboardShortcuts.init();
+    // KeyboardShortcuts.init();
+
+    document.getElementById('customState').onclick = _ =>{ g = null; createInitialState(size); }
+    document.getElementById('randomState').onclick = _ =>{ g = null;  getRandomInitialState(size); }
+
+    document.addEventListener('initialStateCreated', e => {
+        g = new GameOfLife(e.detail.initialState);
+        grid.init(
+            g.dimensions,
+            grid.gridLines,
+            colorizeMatrix(g.currentState.matrix)
+        );
+
+    });
+
+    document.addEventListener('gameStateChange', _ => {
+        grid.render(colorizeMatrix(g.currentState.matrix));
+    });
+
+    const gridlinesButton = document.getElementById('gridLines');
+    gridlinesButton.oninput =  _ => {
+        if (grid.gridLines) {
+            grid.removeGridLines();
+            gridlinesButton.checked = false;
+        } else {
+            grid.addGridLines();
+            gridlinesButton.checked = true;
+        }
+    }
+
+    const setScale = value => {
+        value = parseFloat(value);
+        if (value) { 
+            grid.setScale(parseFloat(value)) ;
+            scaleInputField.value = value;;
+        }
+    }
+
+    const scaleInputField = document.getElementById('scaleFactor');
+    scaleInputField.value = 1;
+
+    const scaleInputSetButton = document.getElementById('setScale');
+    const scaleInputResetButton = document.getElementById('resetSize')
+    scaleInputSetButton.onclick = _ => setScale(scaleInputField.value);
+    scaleInputField.addEventListener('keydown', e => {
+        if (e.code === 'Enter') setScale(scaleInputField.value);
+    });
+    scaleInputResetButton.onclick = _ => setScale(1);
+
+
     Playback.init();
-
-    document.getElementById('customState').onclick = _ => createInitialState(size);
-    document.getElementById('randomState').onclick = _ => createRandomState(size);
-
 }
 
 init();

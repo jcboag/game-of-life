@@ -54,11 +54,15 @@ class GameOfLife {
     #statePosition;
     constructor(initialState) {
         if (Number.isInteger(initialState) && initialState > 0 || Matrix.isMatrixLike(initialState)) initialState = new GameOfLifeMatrix(initialState);
-        else if (initialState?.matrix) initialState = new GameOfLife( state.matrix );
+        else if (initialState?.matrix) initialState = new GameOfLife( initialState.matrix );
         else throw Error("Incorrect Input into `GameOfLife` contstructor");
 
         this.#states = [ initialState ];
         this.#statePosition = 0;
+    }
+
+    get dimensions() {
+        return this.currentState.dimensions;
     }
 
     get statePosition() {

@@ -142,6 +142,10 @@ class Grid {
         this.render(this.#state, gridLines);
     }
 
+    get dimensions() {
+        return this.rows && this.columns ? [ this.rows, this.columns ] : null;
+    }
+
     get squareWidth() {
         return this.gridEngine.squareWidth;
     }
@@ -222,5 +226,9 @@ class Grid {
     setScale(scaleFactor) {
         this.gridEngine.setScale(scaleFactor);
         this.render();
+    }
+    
+    getScale() {
+
     }
 }

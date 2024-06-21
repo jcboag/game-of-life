@@ -80,6 +80,10 @@ class Matrix {
         return new Matrix(Matrix.transpose(this.matrix));
     }
 
+    get dimensions() {
+        return Matrix.getDimensions(this.matrix);
+    }
+
     adjacentIndices(index) {
         return Matrix.adjacentIndices(index).filter(idx => Matrix.isInMatrix(this.matrix, idx));
     }
