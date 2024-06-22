@@ -3,6 +3,7 @@
 
 class CanvasGridEngine {
     #ctx;
+    #scaleFactor;
     constructor(canvasNode) {
         this.canvas = canvasNode;
         if (!this.canvas) throw Error("No canvas element found");
@@ -15,6 +16,7 @@ class CanvasGridEngine {
         this.cols = n;
         this.originalHeight = this.canvasHeight;
         this.originalWidth = this.canvasWidth;
+        this.#scaleFactor = 1;
     }
 
     get canvasHeight() {
@@ -89,9 +91,18 @@ class CanvasGridEngine {
         this.canvas.height = h;
     }
 
-    setScale(scaleFactor) {
+    get scaleFactor() {
+        return this.#scaleFactor;
+    }
+
+    set scaleFactor(floatValue) {
+        this.#setScale(this.#scaleFactor = floatValue);
+    }
+
+    #setScale(scaleFactor) {
         if (!parseFloat(scaleFactor)) throw Error("Invalid scale factor");
         this.#setSize( this.originalWidth * scaleFactor, this.originalHeight * scaleFactor );
+        return true;
     }
 
     getPointRGBA([x,y]) {
@@ -140,6 +151,10 @@ class Grid {
         this.nullState = Number.isInteger(initialState) ? state : Grid.blankState(this.rows,this.columns);
         this.#state = (initialState && Matrix.isMatrixLike(initialState)) ? initialState : this.nullState;
         this.render(this.#state, gridLines);
+    }
+
+    get state() {
+        return JSON.stringify(this.#state);
     }
 
     get dimensions() {
@@ -223,12 +238,16 @@ class Grid {
         return canvasPosition ? this.gridEngine.squareFromCanvasPosition(canvasPosition) : null;
     }
 
-    setScale(scaleFactor) {
-        this.gridEngine.setScale(scaleFactor);
+    set scale(scaleFactor) {
+        this.gridEngine.scaleFactor = scaleFactor;
         this.render();
     }
-    
-    getScale() {
 
+    get scale() {
+        return this.gridEngine.scaleFactor;
+    }
+
+    get currentState() {
+        return new Map([ [ 'dimensions', this.dimensions ],  [ 'gridLines', this.gridLines ], [ 'scale', this.scale ]]);
     }
 }
