@@ -96,13 +96,16 @@ class InitialStateEditor {
     }
 
     static random(dimensions=grid.dimensions) {
+        PageState.currentState = 'edit';
         dispatchInitialState(GameOfLifeMatrix.randomInitialState(dimensions[0]).matrix);
+        PageState.currentState = 'playback';
     }
 }
 
 function handlePageStateChange(state) {
 
     if (state === 'edit' ) {
+        Playback.stop();
         Playback.disable(['startStopButton']);
         Playback.startStopButton.onclick = function(){ 
             InitialStateEditor.submit();
