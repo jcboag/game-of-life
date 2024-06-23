@@ -3,7 +3,6 @@
 
 class CanvasGridEngine {
     #ctx;
-    #scaleFactor;
     constructor(canvasNode) {
         this.canvas = canvasNode;
         if (!this.canvas) throw Error("No canvas element found");
@@ -14,9 +13,8 @@ class CanvasGridEngine {
     init(m,n) {
         this.rows = m;
         this.cols = n;
-        this.originalHeight = this.canvasHeight;
-        this.originalWidth = this.canvasWidth;
-        this.#scaleFactor = 1;
+        this.originalHeight = this.canvas.height;
+        this.originalWidth = this.canvas.width;
     }
 
     get canvasHeight() {
@@ -86,25 +84,6 @@ class CanvasGridEngine {
         return [ x / this.squareWidth, y / this.squareHeight ].map(a => Math.floor(a));
     }
 
-    #setSize(w,h) {
-        this.canvas.width = w;
-        this.canvas.height = h;
-    }
-
-    get scaleFactor() {
-        return this.#scaleFactor;
-    }
-
-    set scaleFactor(floatValue) {
-        this.#setScale(this.#scaleFactor = floatValue);
-    }
-
-    #setScale(scaleFactor) {
-        if (!parseFloat(scaleFactor)) throw Error("Invalid scale factor");
-        this.#setSize( this.originalWidth * scaleFactor, this.originalHeight * scaleFactor );
-        return true;
-    }
-
     getPointRGBA([x,y]) {
         const [r,g,b,a] = this.#ctx.getImageData(x,y,1,1)?.data;
         return [r,g,b,a];
@@ -154,7 +133,7 @@ class Grid {
     }
 
     get state() {
-        return JSON.stringify(this.#state);
+        return Object.freeze(this.#state);
     }
 
     get dimensions() {
@@ -238,16 +217,7 @@ class Grid {
         return canvasPosition ? this.gridEngine.squareFromCanvasPosition(canvasPosition) : null;
     }
 
-    set scale(scaleFactor) {
-        this.gridEngine.scaleFactor = scaleFactor;
-        this.render();
-    }
-
-    get scale() {
-        return this.gridEngine.scaleFactor;
-    }
-
     get currentState() {
-        return new Map([ [ 'dimensions', this.dimensions ],  [ 'gridLines', this.gridLines ], [ 'scale', this.scale ]]);
+        return new Map([ [ 'dimensions', this.dimensions ],  [ 'gridLines', this.gridLines ]]);
     }
 }

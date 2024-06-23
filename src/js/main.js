@@ -1,8 +1,18 @@
+const WINDOW_RESIZE_FACTOR = 0.75;
+
 const DEFAULT_SIZE = 50;
 const DEFAULT_SPEED = 1; // Grid updates per SECOND 
 
+
 var g,
-    grid;
+    grid,
+    maxCanvasHeight,maxCanvasWidth;
+
+// Re-initialize grid with same state
+// Useful when external changes have been made to grid (eg size)
+function reInitGrid() {
+    grid.init( grid.dimensions, grid.gridLines, grid.state );
+}
 
 function colorizeMatrix(matrix,method) {
     // Monochrome
@@ -13,39 +23,60 @@ function newDisplayMatrixHandler(e) {
     grid.render(e.detail.displayMatrix);
 }
 
-// class Settings {
-//     #key = 'lastPageState';
-//     #settings;
+function scaleCanvas(factor) {
+    const canvas = grid.gridEngine.canvas;
+    canvas.height = factor * maxCanvasHeight;
+    canvas.width = factor * maxCanvasWidth;
+    reInitGrid();
+}
 
-//     static defaults = [
-//         ['gridScale', 1],
-//         ['gridLines', true],
-//         ['dimensions', [50,50]],
-//         ['speed', 1],
-//         ['state', 'playback']
-//     ]
+function fitCanvasToWindow() {
+    const canvas = document.getElementById('grid');
+    const measure =  Math.min(window.innerWidth, window.innerHeight);
+    canvas.width = canvas.height = measure * WINDOW_RESIZE_FACTOR;
 
-//     init(reset=false) {
-//         load(reset);
-//         document.addEventListener('pagePropsChanged', _ => Settings.save());
-//     }
+    // Anytime it is resized, we need to track the max size it can 
+    // take on to properly scale it
+    maxCanvasWidth = canvas.width;
+    maxCanvasHeight = canvas.height
+}
 
-//     load(reset=false) {
-//         this.#settings = new Map(reset ? defaults : (JSON.parse(localStorage.getItem(this.#key)) || defaults));
-//     }
+class Settings {
+    static #key = 'lastPageState';
+    static #settings;
 
-//     save() {
-//         localStorage.setItem(this.#key, Array.from(this.#settings.entries()));
-//     }
+    static defaults = new Map([
+        ['gridScale', 1],
+        ['gridLines', true],
+        ['dimensions', [50,50]],
+        ['speed', 1],
+        ['state', 'playback']
+    ])
 
-//     get(setting) {
-//         this.#settings.get(setting);
-//     }
+    static init(reset=false) {
+        this.load(reset);
+        document.addEventListener('pagePropsChanged', _ => Settings.save());
+    }
 
-//     set(setting) {
-//         this.#settings.set(setting);
-//     }
-// }
+    static load(reset=false) {
+        this.#settings = reset ? new Map( this.defaults ) : new Map (JSON.parse(localStorage.getItem(this.#key)) || this.defaults);
+    }
+
+    static save() {
+        localStorage.setItem(this.#key, JSON.stringify(Array.from(this.#settings.entries())));
+    }
+
+    static get(setting) {
+        console.log(this.#settings);
+        console.log(this.#settings.get(setting));
+        return this.#settings.get(setting) || this.defaults.get(setting);
+    }
+
+    static set(setting,value) {
+        this.#settings.set(setting,value);
+        this.save();
+    }
+}
 
 function dispatchInitialState(initialState) {
     g = new GameOfLife(initialState);
@@ -60,9 +91,6 @@ function dispatchInitialState(initialState) {
 function setLastGridState() {
     const currentState = grid.currentState;
     currentState.set('speed', Playback.speed);
-
-    console.log(currentState);
-
     localStorage.setItem('lastGridState', JSON.stringify(Array.from(currentState.entries()))) ;
 }
 
@@ -72,10 +100,9 @@ function getLastGridState() {
 
 function init() {
 
-    function initializeGrid(dimensions,gridLines,scale) {
+    function initializeGrid(dimensions,gridLines) {
         grid = new Grid();
         grid.init(dimensions, gridLines);
-        grid.scale = parseFloat(scale);
     }
 
     function initializeStateCreators() {
@@ -97,6 +124,7 @@ function init() {
         });
     }
 
+
     function initializeGridManipulators() {
         const getById = id => document.getElementById(id);
 
@@ -104,7 +132,6 @@ function init() {
 
         // Initialize values to the state of grid
         gridLinesButton.checked = grid.gridLines;
-        scaleInputField.value = grid.scale;
         rowsField.value = grid.rows;
         colsField.value = grid.columns;
 
@@ -116,21 +143,27 @@ function init() {
             } else if ( !gridLinesButton.checked && grid.gridLines) {
                 grid.removeGridLines();
             }
-            setLastGridState();
+            Settings.set('gridLines',grid.gridLines);
         }
-        scaleInputField.onchange = _ => {
-            const value = parseFloat(scaleInputField.value);
-            if (value) grid.scale = value;
-            setLastGridState();
-        };
-
         [rowsField, colsField].forEach(field => {
             field.onchange = e => { 
                 grid.init([parseInt(e.target.value), parseInt(e.target.value)], grid.gridLines);
                 rowsField.value = colsField.value = e.target.value;
-                setLastGridState();
+                Settings.set('dimensions', grid.dimensions);
             }
         });
+
+        scaleInputField.value = Settings.get('gridScale');
+        scaleCanvas(scaleInputField.value);
+        scaleInputField.onchange = _ => {
+            const value = parseFloat(scaleInputField.value);
+            if (value) {
+                scaleCanvas(value);
+                Settings.set('gridScale', value);
+
+            }
+        };
+
     }
 
     function initializePlayback() {
@@ -150,15 +183,17 @@ function init() {
         KeyboardShortcuts.init();
     }
 
-    // Settings.init();
+    Settings.init();
+    
+    // Need to ensure canvas is where it is supposed to be relative
+    fitCanvasToWindow();
 
     // Get last values for persistence
     const lastGrid = getLastGridState();
     const dimensions = lastGrid.get('dimensions') || [DEFAULT_SIZE,DEFAULT_SIZE];
     const gridLines = lastGrid.get('gridLines') || true;
-    const scale = lastGrid.get('scale') || 1;
 
-    initializeGrid(dimensions,gridLines,scale);
+    initializeGrid(dimensions,gridLines);
     initializeStateCreators();
     initializeGridManipulators();
     initializePlayback();
@@ -166,7 +201,13 @@ function init() {
 
     document.addEventListener('stateChange', _ => handlePageStateChange(PageState.currentState));
 
-    InitialStateEditor.random( grid.dimensions );
+    window.addEventListener('resize', () => {
+        // Scale grid relative to window
+        fitCanvasToWindow();
+        scaleCanvas( document.getElementById('scaleFactor').value )
+        reInitGrid();
+    });
+    InitialStateEditor.random(grid.dimensions);
 }
 
 
