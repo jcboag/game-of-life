@@ -1,5 +1,4 @@
 # Algorithm Visualizations
-
 This project aims to provide interactive visualizations for various algorithms, starting with John Conway's "Game of Life." 
 The goal is to create an educational tool that makes understanding complex algorithms easier and more engaging.
 
@@ -12,17 +11,19 @@ Conway's Game of Life is a cellular automaton devised by the British mathematici
 - **Start, Stop, Rewind, and Forward Controls**: Control the simulation with intuitive buttons.
 - **Random Initialization**: Generate random initial states with a single click.
 - **Responsive Grid**: The grid dynamically adjusts to fit the canvas size, providing a clear and engaging visualization.
+- **Gridlines Toggle**: Option to show or hide gridlines for better visualization.
+- **Scale Factor**: Adjust the scale of the grid to zoom in and out.
+- **Custom State Creation**: Create and edit custom initial states by clicking and dragging on the grid.
+- **Speed Control Slider**: Adjust the speed of the simulation using a slider.
 
 ## In the Works
 
 ### 1. Graphical Construction of Initial States
-Enable users to create and modify their own initial states graphically. This will allow for a more interactive and customized experience, letting users explore various scenarios and patterns.
+- **Pattern Libraries**: Predefined patterns such as gliders, pulsars, and more for quick setup.
 
 ### 2. Improved UI
-Enhance the user interface by adding buttons, sliders, and other interactive elements to control the simulation state. This includes:
-- **Speed Control Slider**: Adjust the speed of the simulation.
-- **Grid Size Selector**: Change the size of the grid to explore different scenarios.
-- **Pattern Libraries**: Predefined patterns such as gliders, pulsars, and more for quick setup.
+- **More Intuitive UI**: Visual instruction on how to use.
+- **Color Options**: Enable users to choose how to color cells.
 
 ### 3. Additional Algorithms
 Expand the project to include visualizations of other algorithms, including variations of the Game of Life and sorting algorithms. Planned features:
