@@ -1,12 +1,35 @@
 const DEFAULT_SIZE = 50;
-const DEFAULT_SPEED = 1; // Changes per SECOND
+const DEFAULT_SPEED = 1; // Grid updates per SECOND 
 
 var g,
     grid;
 
+class PageState {
+    static #currentState;
+
+    static get EDIT() {
+        return 'edit'
+    }
+
+    static get PLAYBACK() {
+        return 'playback'
+    }
+
+    static get currentState() {
+        return this.#currentState;
+    }
+
+    static set currentState(state) {
+        state = state.toUpperCase();
+        if (this[state]) {
+            this.#currentState = this[state];
+            document.dispatchEvent(new CustomEvent('stateChange', { detail: { state: this.currentState}}));
+        }
+    }
+}
+
 const Playback = {
     init(speed=DEFAULT_SPEED) {
-        this.initialized = true;
         this.intervalId = null;
 
         this.submitStateButton = document.getElementById('startSubmit');
@@ -25,11 +48,23 @@ const Playback = {
 
         this.setSpeed(speed);
     },
-    disable() {
-        this.buttons.forEach( button => { this[button].disabled = true });
+    stateChangeHandler(e) {
+        console.log('Playback, handling state change')
+        if (e.detail.state === 'edit') {
+            this.disable();
+        } else if (e.detail.state === 'playback') {
+            this.enable();
+        }
     },
-    enable() {
-        this.buttons.forEach( button => { this[button].disabled = false });
+    disable(except=[]) {
+        const buttonsToDisable = this.buttons.filter( button => !except.includes(button));
+        console.log(`disabling playback on ${buttonsToDisable}`)
+        buttonsToDisable.forEach( button => { this[button].disabled = true });
+    },
+    enable(except=[]) {
+        const buttonsToEnable = this.buttons.filter( button => !except.includes(button));
+        console.log(`enabling playback on ${buttonsToEnable}`);
+        buttonsToEnable.forEach( button => { this[button].disabled = false });
     },
     startLoop() {
         if (!this.loopInProgress()) {
@@ -46,13 +81,13 @@ const Playback = {
     },
     start() {
         if (!g) {
-            getRandomInitialState(grid.dimensions[0]);
-            return;
-        }
+            InitialStateEditor.random();
+        } 
         this.startLoop();
         this.startStopButton.removeEventListener('click', this.start);
         this.startStopButton.addEventListener('click', this.stop);
         this.startStopButton.innerText = 'Stop';
+        
     },
     stop() {
         this.stopLoop();
@@ -126,84 +161,114 @@ const KeyboardShortcuts = {
         }
     },
     disable() {
+        console.log('disabled keybinds')
         if (this.enabled) this.enabled = false;
     },
     enable() {
+        console.log('enabled keybinds');
         if (!this.enabled) this.enabled = true;
     }
 };
 
-function createInitialState(size) {
-    // Toggle the color of a square
-    const toggleSquare = square => Matrix.setItem(initialState, square, !Matrix.getItem(initialState, square));
-    // Much faster than rewdrawing via event
-    const render = _ =>  grid.render(colorizeMatrix(initialState));
+class InitialStateEditor {
+    static initialState;
+    static squares;
+    static firstSquareValue;
+
+    static init(matrix) {
+        PageState.currentState = 'edit';
+
+        if (matrix) {
+            this.initialState = matrix
+        } else {
+            this.initialState = Matrix.getNullMatrix(...grid.dimensions);
+        }
+
+        grid.clear();
+        grid.init(Matrix.getDimensions(this.initialState), grid.gridLines);
+
+        this.squares = [];
+        this.firstSquareValue = [];
+
+        document.addEventListener('mousedown', this.onMouseDown);
+    }
+
+    // Set the square color
+    static toggleSquare (square) {
+        Matrix.setItem(this.initialState, square, !Matrix.getItem(this.initialState, square));
+    }
+
+    // Much faster than event-based trigger
+    static render = _ =>  grid.render(colorizeMatrix(this.initialState));
 
     // Drag the cursor across the grid, assigning each crossed square
     // the appropriate value
-    const onMouseMove = e => {
+    static onMouseMove = e => {
         const square = grid.squareFromPoint([e.clientX,e.clientY]);
         if (!square) return;
-
-        if (!squares.includes(JSON.stringify(square))) {
-            if (Matrix.getItem(initialState,square) !== firstSquareValue) {
-                Matrix.setItem(initialState, square, firstSquareValue )
+        if (!this.squares.includes(JSON.stringify(square))) {
+            if (Matrix.getItem(this.initialState,square) !== this.firstSquareValue) {
+                Matrix.setItem(this.initialState, square, this.firstSquareValue )
             }
-            squares.push(JSON.stringify(square));
+            this.squares.push(JSON.stringify(square));
         }
-        render();
+        this.render();
     }
-
-    const onMouseDown = e => {
-        squares = [];
+    static onMouseDown = e => {
+        this.squares = [];
         // Toggle the value of the first clicked square
         const firstSquare = grid.squareFromPoint([e.clientX,e.clientY]);
         if  (firstSquare) {
-            toggleSquare(firstSquare);
-            render();
+            this.toggleSquare(firstSquare);
+            this.render();
         }
         // Set all other crossed squares to the value of the first square
-        firstSquareValue = firstSquare ? Matrix.getItem(initialState, firstSquare) : 0;
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
+        this.firstSquareValue = firstSquare ? Matrix.getItem(this.initialState, firstSquare) : 0;
+        document.addEventListener('mousemove', this.onMouseMove);
+        document.addEventListener('mouseup', this.onMouseUp);
     }
 
-    const onMouseUp = _ => document.removeEventListener('mousemove', onMouseMove);
+    static onMouseUp = _ => document.removeEventListener('mousemove', this.onMouseMove);
 
-    const submit = _ => {
-        document.removeEventListener('keydown', onSubmit);
-        document.removeEventListener('mousedown', onMouseDown);
-        document.removeEventListener('keydown', onSubmit);
-
-        dispatchInitialState(Matrix.map(initialState, a => a ? 1 : 0 ));
+    // Remove added eventlisteners
+    static cleanUp = () => {
+        this.firstSquares = [];
+        this.firstSquareValue = null;
+        document.removeEventListener('mousedown', this.onMouseDown);
+        document.removeEventListener('mousemove', this.onMouseMove);
+        document.removeEventListener('mouseup', this.onMouseUp);
     }
 
-    const onSubmit = e => {
-        if (e.code === 'Enter') {
-            submit();
-            Playback.start();
+    static submit() {
+        dispatchInitialState(Matrix.map(this.initialState, a => a ? 1 : 0)) ;
+    }
+
+    static random(dimensions=grid.dimensions) {
+        dispatchInitialState(GameOfLifeMatrix.randomInitialState(dimensions[0]).matrix);
+    }
+
+
+}
+
+function handlePageStateChange(state) {
+
+    if (state === 'edit' ) {
+        Playback.disable(['startStopButton']);
+        Playback.startStopButton.onclick = function(){ 
+            InitialStateEditor.submit();
+            Playback.toggleStart();
         }
+        KeyboardShortcuts.disable();
+
+    } else if (state === 'playback') {
+        Playback.startStopButton.onclick = Playback.toggleStart.bind(Playback);
+        InitialStateEditor.cleanUp();
+        Playback.enable();
+        KeyboardShortcuts.enable();
     }
-
-    Playback.stop();
-
-    document.dispatchEvent(new CustomEvent('stateCreationInitiated'));
-
-    const initialState = Matrix.map(Matrix.getNullMatrix(size,size), _ => false);
-    let squares = [];
-    let firstSquareValue;
-
-    grid.clear();
-    grid.init(Matrix.getDimensions(initialState), grid.gridLines);
-
-    document.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('keydown', onSubmit);
-}
+} 
 
 
-function getRandomInitialState(size) {
-    dispatchInitialState(GameOfLifeMatrix.randomInitialState(size).matrix);
-}
 
 function colorizeMatrix(matrix,method) {
     // Monochrome
@@ -229,23 +294,64 @@ function previousState(game) {
 }
 
 function dispatchInitialState(initialState) {
-    document.dispatchEvent( new CustomEvent('stateCreationFinished',{detail: {initialState: initialState}}));
+    g = new GameOfLife(initialState);
+    grid.init(
+        g.dimensions,
+        grid.gridLines,
+        colorizeMatrix(g.currentState.matrix)
+    );
+    PageState.currentState = 'playback'
 }
 
 function setLastGridState() {
     const currentState = grid.currentState;
     currentState.set('speed', Playback.speed);
-    localStorage.setItem('lastGridState', JSON.stringify(Array.from( currentState.entries()))) ;
+
+    console.log(currentState);
+
+    localStorage.setItem('lastGridState', JSON.stringify(Array.from(currentState.entries()))) ;
 }
 
 function getLastGridState() {
     return new Map(JSON.parse( localStorage.getItem('lastGridState')));
 }
 
+// class Settings {
+//     #key = 'lastPageState';
+//     #settings;
+
+//     static defaults = [
+//         ['gridScale', 1],
+//         ['gridLines', true],
+//         ['dimensions', [50,50]],
+//         ['speed', 1],
+//         ['state', 'playback']
+//     ]
+
+//     init(reset=false) {
+//         load(reset);
+//         document.addEventListener('pagePropsChanged', _ => Settings.save());
+//     }
+
+//     load(reset=false) {
+//         this.#settings = new Map(reset ? defaults : (JSON.parse(localStorage.getItem(this.#key)) || defaults));
+//     }
+
+//     save() {
+//         localStorage.setItem(this.#key, Array.from(this.#settings.entries()));
+//     }
+
+//     get(setting) {
+//         this.#settings.get(setting);
+//     }
+
+//     set(setting) {
+//         this.#settings.set(setting);
+//     }
+// }
+
 
 function init() {
-    const createState = _ => createInitialState(grid.dimensions[0]);
-    const getRandomState = _ => getRandomInitialState(grid.dimensions[0]);
 
     function initializeGrid(dimensions,gridLines,scale) {
         grid = new Grid();
@@ -254,14 +360,9 @@ function init() {
     }
 
     function initializeStateCreators() {
-        document.getElementById('customState').onclick = _ => { 
-            g = null; 
-            createState();
-        }
-        document.getElementById('randomState').onclick = _ => { 
-            g = null; 
-            getRandomState() ;
-        }
+        document.getElementById('customState').onclick = _ => InitialStateEditor.init();
+        document.getElementById('randomState').onclick = _ => InitialStateEditor.random();
+
         // Important! 'Binds' the  matrix of the game state to the
         // grid, so changes in the matrix cause changes in the grid
         //
@@ -278,16 +379,16 @@ function init() {
     }
 
     function initializeGridManipulators() {
-        const gridLinesButton = document.getElementById('gridLines');
-        const scaleInputField = document.getElementById('scaleFactor');
-        const rowsField = document.getElementById('mRows');
-        const colsField  = document.getElementById('nCols');
+        const getById = id => document.getElementById(id);
+
+        const [ gridLinesButton, scaleInputField, rowsField, colsField ] =  ['gridLines', 'scaleFactor', 'mRows', 'nCols'].map( id => getById(id))
 
         // Initialize values to the state of grid
         gridLinesButton.checked = grid.gridLines;
         scaleInputField.value = grid.scale;
         rowsField.value = grid.rows;
         colsField.value = grid.columns;
+
 
         // 'Bind' the values of the buttons to the state of the grid
         gridLinesButton.oninput =  _ => {
@@ -303,6 +404,7 @@ function init() {
             if (value) grid.scale = value;
             setLastGridState();
         };
+
         [rowsField, colsField].forEach(field => {
             field.onchange = e => { 
                 grid.init([parseInt(e.target.value), parseInt(e.target.value)], grid.gridLines);
@@ -310,7 +412,6 @@ function init() {
                 setLastGridState();
             }
         });
-
     }
 
     function initializePlayback() {
@@ -324,15 +425,13 @@ function init() {
             Playback.setSpeed(value);
             setLastGridState();
         }
-        document.addEventListener('stateCreationInitiated', _ => Playback.disable());
-        document.addEventListener('stateCreationFinished', _ => Playback.enable());
     }
 
     function initializeKeyboardShortcuts() {
         KeyboardShortcuts.init();
-        document.addEventListener('stateCreationInitiated', _ => KeyboardShortcuts.disable());
-        document.addEventListener('stateCreationFinished', _ => KeyboardShortcuts.enable());
     }
+
+    // Settings.init();
 
     // Get last values for persistence
     const lastGrid = getLastGridState();
@@ -346,7 +445,9 @@ function init() {
     initializePlayback();
     initializeKeyboardShortcuts();
 
-    getRandomState();
+    document.addEventListener('stateChange', _ => handlePageStateChange(PageState.currentState));
+
+    InitialStateEditor.random( grid.dimensions );
 }
 
 init();
