@@ -1,43 +1,167 @@
+/* General styles */
 body {
     font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
+    background-color: #f4f4f4;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    text-align: center;
+    height: 100vh;
 }
 
-button {
-    background-color: #4CAF50;
+header {
+    color: #333;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+#mainTitle {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+}
+
+/* Canvas styles */
+canvas {
+    display: block;
+    margin: 20px auto;
+    border: 2px solid #333;
+    background-color: #fff;
+}
+
+/* Playback controls styles */
+#playback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+#playback button,
+#playback input[type="range"] {
+    margin: 0 10px;
+}
+
+#playback button {
+    background-color: #007bff;
     color: white;
     border: none;
     padding: 10px 20px;
-    margin: 5px;
+    font-size: 1em;
     cursor: pointer;
     border-radius: 5px;
-    font-size: 16px;
+    transition: background-color 0.3s;
 }
 
-button:hover {
-    background-color: #45a049;
+#playback button:hover {
+    background-color: #0056b3;
 }
 
-
-#scaleFactor {
-    padding: 5px;
-    font-size: 16px;
-    width: 50px;
-    text-align: center;
-    margin: 0 5px;
+#playback input[type="range"] {
+    -webkit-appearance: none;
+    width: 150px;
+    height: 10px;
+    background: #ddd;
+    outline: none;
+    opacity: 0.7;
+    transition: opacity 0.2s;
 }
 
-#gridLines {
+#playback input[type="range"]:hover {
+    opacity: 1;
+}
+
+#playback input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #007bff;
     cursor: pointer;
+    border-radius: 50%;
 }
 
-#grid {
-    border: 1px solid #000000;
+#playback input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #007bff;
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+/* State creation and grid manipulation styles */
+#dimensions,
+#change {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 10px 0;
+}
+
+#dimensions div,
+#change div {
+    margin: 0 15px;
+}
+
+#dimensions label,
+#change label {
+    margin-right: 10px;
+}
+
+#dimensions input,
+#change input {
+    padding: 5px;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+/* Custom state and random state buttons */
+#customState,
+#randomState {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1em;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+    margin: 0 10px;
+}
+
+#customState:hover,
+#randomState:hover {
+    background-color: #218838;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2em;
+    }
+
+    #playback {
+        flex-direction: column;
+    }
+
+    #playback button,
+    #playback input[type="range"] {
+        margin: 10px 0;
+    }
+
+    #dimensions,
+    #change {
+        flex-direction: column;
+    }
+
+    #dimensions div,
+    #change div {
+        margin: 10px 0;
+    }
+
+    #playback input[type="range"] {
+        width: 100%;
+    }
 }
