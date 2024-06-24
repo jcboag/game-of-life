@@ -179,6 +179,7 @@ function init() {
 
     function initializePlayback() {
         const speedField = document.getElementById("speed");
+        const canvas = document.getElementById('grid');
         Playback.init( getLastGridState().get('speed') || DEFAULT_SPEED);
         // Initialize speed slider value
         speedField.value = Playback.speed;
@@ -188,6 +189,15 @@ function init() {
             Playback.setSpeed(value);
             setLastGridState();
         }
+
+        document.addEventListener('stateChange', () => {
+            if (PageState.currentState === 'playback') {
+                canvas.removeEventListener('click', Playback.toggleStart);
+                canvas.addEventListener('click', Playback.toggleStart);
+            } else if (PageState.currentState === 'edit') {
+                canvas.removeEventListener('click', Playback.toggleStart);
+            }
+        });
     }
 
     function initializeKeyboardShortcuts() {
@@ -220,6 +230,5 @@ function init() {
     });
     InitialStateEditor.random(grid.dimensions);
 }
-
 
 init();

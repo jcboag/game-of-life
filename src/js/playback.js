@@ -13,6 +13,8 @@ const Playback = {
         this.rewindButton.onclick = this.rewind.bind(this);
         this.forwardButton.onclick = this.forward.bind(this);
         this.resetButton.onclick = this.reset.bind(this);
+
+        this.toggleStart = this.toggleStart.bind(this);
         
         this.buttons = ['startStopButton', 'rewindButton', 'forwardButton', 'resetButton', ];
 
