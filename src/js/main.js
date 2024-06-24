@@ -3,6 +3,9 @@ const WINDOW_RESIZE_FACTOR = 0.75;
 const DEFAULT_SIZE = 50;
 const DEFAULT_SPEED = 1; // Grid updates per SECOND 
 
+const MIN_GRID_SIZE = 2;
+const MAX_GRID_SIZE = 200;
+
 
 var g,
     grid,
@@ -147,9 +150,17 @@ function init() {
         }
         [rowsField, colsField].forEach(field => {
             field.onchange = e => { 
-                grid.init([parseInt(e.target.value), parseInt(e.target.value)], grid.gridLines);
-                rowsField.value = colsField.value = e.target.value;
-                Settings.set('dimensions', grid.dimensions);
+                value = parseInt(e.target.value);
+                if (value) {
+                    if (value < MIN_GRID_SIZE) {
+                        value = MIN_GRID_SIZE;
+                    } else if (value > MAX_GRID_SIZE) {
+                        value = MAX_GRID_SIZE;
+                    } 
+                    grid.init([value,value], grid.gridLines);
+                    rowsField.value = colsField.value = value.toString();
+                    Settings.set('dimensions', grid.dimensions);
+                }
             }
         });
 
