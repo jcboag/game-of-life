@@ -1,3 +1,6 @@
+// import { Matrix } from './matrix';
+// import { Grid, Colorizer} from './grid';
+
 // Matrix with only ones and zeros, an algorithm to classify entries, and a transition function.
 class GameOfLifeMatrix extends Matrix {
     static randomInitialState(size) {
@@ -52,13 +55,60 @@ class GameOfLifeMatrix extends Matrix {
 class GameOfLife {
     #states;
     #statePosition;
-    constructor(initialState) {
+    #speed = 10;
+    constructor(initialState,speed=10) {
+        this.init(initialState,speed);
+    }
+
+    init(initialState,speed) {
         if (Number.isInteger(initialState) && initialState > 0 || Matrix.isMatrixLike(initialState)) initialState = new GameOfLifeMatrix(initialState);
         else if (initialState?.matrix) initialState = new GameOfLife( initialState.matrix );
         else throw Error("Incorrect Input into `GameOfLife` contstructor");
 
+        this.canvas = null;
+        this.speed = speed || this.#speed;
+        this.intervalId = null;
+
         this.#states = [ initialState ];
         this.#statePosition = 0;
+
+    }
+
+    get playing() {
+        return Number.isInteger(this.intervalId);
+    }
+
+    get updateInterval() {
+        return 1000 / this.speed 
+    }
+
+    get speed() {
+        return this.#speed;
+    }
+
+    set speed(updatesPerSecond) {
+        if (updatesPerSecond <= 0) throw Error("Speed must be positive");
+        this.#speed = updatesPerSecond;
+        if (this.playing) {
+            this.stop();
+            this.start();
+        }
+
+    }
+
+    setCanvas(canvas) {
+        this.canvas = canvas;
+    }
+
+    initGrid() {
+        if (!this.canvas) throw new Error('Canvas not set');
+        const dimensions = Matrix.getDimensions(this.currentState.matrix);
+        this.grid = new Grid(this.canvas);
+        this.grid.init( dimensions, gridLines, Colorizer.monochrome(this.currentState.matrix));
+    }
+
+    render() {
+        this.grid.render(Colorizer.monochrome(this.#states[this.statePosition].matrix));
     }
 
     get dimensions() {
@@ -80,6 +130,46 @@ class GameOfLife {
                 this.#states.push(this.currentState.nextState);
             }
             this.#statePosition = index;
+            this.render();
         }
+    }
+    start() {
+        if (this.playing) return;
+        this.intervalId = setInterval(() => {
+            this.nextState();
+        }, this.updateInterval); 
+    }
+
+    stop() {
+        if (!this.playing) return;
+        clearInterval(this.intervalId);
+        this.intervalId = null;
+    }
+
+    reset() {
+        if (this.playing) this.stop();
+        this.statePosition = 0;
+    }
+
+    toggleStartStop() {
+        if (this.playing) {
+            this.stop();
+        } else {
+            this.start();
+        }
+    }
+
+    nextState() {
+        if (this.statePosition < this.#states.length - 1) {
+            this.statePosition++;
+        } else {
+            const nextState = this.#states[this.statePosition].nextState;
+            this.#states.push(nextState);
+            this.statePosition++;
+        }
+    }
+
+    previousState() {
+        if (this.statePosition != 0) this.statePosition--;
     }
 }

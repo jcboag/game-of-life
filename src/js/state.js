@@ -27,7 +27,9 @@ class InitialStateEditor {
     static squares;
     static firstSquareValue;
 
+
     static init(matrix) {
+        grid = g.grid;
         PageState.currentState = 'edit';
 
         if (matrix) {
@@ -100,39 +102,6 @@ class InitialStateEditor {
         dispatchInitialState(GameOfLifeMatrix.randomInitialState(dimensions[0]).matrix);
         PageState.currentState = 'playback';
     }
-}
-
-function handlePageStateChange(state) {
-
-    if (state === 'edit' ) {
-        Playback.stop();
-        Playback.disable(['startStopButton']);
-        Playback.startStopButton.onclick = function(){ 
-            InitialStateEditor.submit();
-            Playback.toggleStart();
-        }
-        KeyboardShortcuts.disable();
-
-    } else if (state === 'playback') {
-        Playback.startStopButton.onclick = Playback.toggleStart.bind(Playback);
-        InitialStateEditor.cleanUp();
-        Playback.enable();
-        KeyboardShortcuts.enable();
-    }
-} 
-
-function setStatePosition(game,pos) {
-    game.statePosition = pos;
-    const displayMatrix = colorizeMatrix(game.currentState.matrix);
-    document.dispatchEvent(new CustomEvent('displayMatrixCreated', { detail: {displayMatrix}}));
-}
-
-function nextState(game) {
-    setStatePosition(game, ++game.statePosition);
-}
-
-function previousState(game) {
-    setStatePosition(game, --game.statePosition);
 }
 
 

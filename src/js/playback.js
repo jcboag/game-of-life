@@ -1,22 +1,23 @@
-const Playback = {
+Playback = {
     init(speed=DEFAULT_SPEED) {
-        this.intervalId = null;
-
-        this.submitStateButton = document.getElementById('startSubmit');
-
         this.startStopButton = document.querySelector('#startStop');
         this.rewindButton = document.querySelector('#rewind');
         this.forwardButton = document.querySelector('#forward');
         this.resetButton = document.querySelector('#reset');
+        this.speedSlider = document.getElementById('speed');
 
         this.startStopButton.onclick = this.toggleStart.bind(this);
         this.rewindButton.onclick = this.rewind.bind(this);
         this.forwardButton.onclick = this.forward.bind(this);
         this.resetButton.onclick = this.reset.bind(this);
-        
+
+        this.speedSlider.onchange = _ => this.setSpeed.bind(this)((this.speedSlider.value));
+        this.setSpeed(speed);
+
         this.buttons = ['startStopButton', 'rewindButton', 'forwardButton', 'resetButton', ];
 
-        this.setSpeed(speed);
+
+        g.canvas.addEventListener('click', this.toggleStart.bind(this));
     },
     stateChangeHandler(e) {
         console.log('Playback, handling state change')
@@ -30,80 +31,38 @@ const Playback = {
         const buttonsToDisable = this.buttons.filter( button => !except.includes(button));
         console.log(`disabling playback on ${buttonsToDisable}`)
         buttonsToDisable.forEach( button => { this[button].disabled = true });
+        g.canvas.removeEventListener('click', this.toggleStart.bind(this));
     },
     enable(except=[]) {
         const buttonsToEnable = this.buttons.filter( button => !except.includes(button));
         console.log(`enabling playback on ${buttonsToEnable}`);
         buttonsToEnable.forEach( button => { this[button].disabled = false });
-    },
-    startLoop() {
-        if (!this.loopInProgress()) {
-            const updateState = _ => nextState(g);
-            const timeBetweenUpdates = 1000 / this.speed
-            this.intervalId = setInterval(updateState, timeBetweenUpdates);
-        }
-    },
-    stopLoop() {
-        if (this.loopInProgress()) {
-            clearInterval(this.intervalId);
-            this.intervalId = null;
-        }
-    },
-    start() {
-        if (!g) {
-            InitialStateEditor.random();
-        } 
-        this.startLoop();
-        this.startStopButton.removeEventListener('click', this.start);
-        this.startStopButton.addEventListener('click', this.stop);
-        this.startStopButton.innerText = 'Stop';
-        
-    },
-    stop() {
-        this.stopLoop();
-        this.startStopButton.removeEventListener('click', this.stop);
-        this.startStopButton.addEventListener('click', this.start);
-        this.startStopButton.innerText = 'Start';
-    },
-    loopInProgress() {
-        return this.intervalId !== null;
+        g.canvas.addEventListener('click', this.toggleStart.bind(this));
     },
     toggleStart() {
-        if (this.loopInProgress()) this.stop();
-        else this.start();
+        if (pageState === 'playback') {
+            if (g.playing) {
+                g.stop();
+                this.startStopButton.innerText = 'Start';
+            } else {
+                g.start();
+                this.startStopButton.innerText = 'Pause';
+            }
+        }
     },
     rewind() {
-        if (this.loopInProgress()) {
-            this.stop();
-            return;
-        }
-        try {
-            previousState(g);
-        } catch {
-            setStatePosition(0);
-        }
+        if (g.playing) g.stop();
+        g.previousState();
     },
     forward() {
-        if (this.loopInProgress()) {
-            this.stop();
-            return;
-        }
-        try {
-            nextState(g);
-        } catch {
-            previousState(g);
-        }
+        if (g.playing) g.stop();
+        g.nextState();
     },
     reset() {
-        if (this.loopInProgress()) this.stop();
-        setStatePosition(g,0);
+        g.reset();
     },
-    // relative to default
     setSpeed(speed) {
-        this.speed = speed;
-        if (this.loopInProgress()) {
-            this.stopLoop();
-            this.startLoop();
-        }
-    },
+        g.speed = speed;
+        this.speedSlider.value = speed;
+    }
 };
