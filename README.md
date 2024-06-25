@@ -1,4 +1,4 @@
-[Demo](jcboag.github.io/game-of-life)
+[Demo](https://jcboag.github.io/game-of-life)
 
 # Algorithm Visualizations
 This project aims to provide interactive visualizations for various algorithms, starting with John Conway's "Game of Life." 
