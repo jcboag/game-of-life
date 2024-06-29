@@ -56,21 +56,25 @@ class GameOfLife {
     #states;
     #statePosition;
     #speed = 10;
-    constructor(initialState,speed=10) {
-        this.init(initialState,speed);
-    }
-
-    init(initialState,speed) {
+    constructor( {initialState , speed = 10, canvas } = {} ) {
         if (Number.isInteger(initialState) && initialState > 0 || Matrix.isMatrixLike(initialState)) initialState = new GameOfLifeMatrix(initialState);
         else if (initialState?.matrix) initialState = new GameOfLife( initialState.matrix );
         else throw Error("Incorrect Input into `GameOfLife` contstructor");
 
-        this.canvas = null;
+        this.setCanvas(canvas);
+
         this.speed = speed || this.#speed;
         this.intervalId = null;
 
         this.#states = [ initialState ];
         this.#statePosition = 0;
+    }
+
+    get gameState() {
+        return new Map([
+            ['speed', this.speed], 
+            ['dimensions', this.grid.dimensions],
+        ])
 
     }
 
@@ -108,7 +112,7 @@ class GameOfLife {
     }
 
     render() {
-        this.grid.render(Colorizer.monochrome(this.#states[this.statePosition].matrix));
+        if (this.canvas) this.grid.render(Colorizer.monochrome(this.#states[this.statePosition].matrix));
     }
 
     get dimensions() {

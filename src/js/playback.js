@@ -1,46 +1,47 @@
 Playback = {
-    init(speed=DEFAULT_SPEED) {
+    init() {
         this.startStopButton = document.querySelector('#startStop');
         this.rewindButton = document.querySelector('#rewind');
         this.forwardButton = document.querySelector('#forward');
         this.resetButton = document.querySelector('#reset');
         this.speedSlider = document.getElementById('speed');
 
-        this.startStopButton.onclick = this.toggleStart.bind(this);
-        this.rewindButton.onclick = this.rewind.bind(this);
-        this.forwardButton.onclick = this.forward.bind(this);
-        this.resetButton.onclick = this.reset.bind(this);
+
+        this.toggleStart = this.toggleStart.bind(this);
+        this.rewind = this.rewind.bind(this);
+        this.forward = this.forward.bind(this);
+        this.reset = this.reset.bind(this);
+
+        this.startStopButton.onclick = this.toggleStart;
+        this.rewindButton.onclick = this.rewind;
+        this.forwardButton.onclick = this.forward;
+        this.resetButton.onclick = this.reset;
 
         this.speedSlider.onchange = _ => this.setSpeed.bind(this)((this.speedSlider.value));
-        this.setSpeed(speed);
+        this.setSpeed(g.speed);
+
+
+
+        g.canvas.addEventListener('click',this.toggleStart);
 
         this.buttons = ['startStopButton', 'rewindButton', 'forwardButton', 'resetButton', ];
-
-
-        g.canvas.addEventListener('click', this.toggleStart.bind(this));
-    },
-    stateChangeHandler(e) {
-        console.log('Playback, handling state change')
-        if (e.detail.state === 'edit') {
-            this.disable();
-        } else if (e.detail.state === 'playback') {
-            this.enable();
-        }
     },
     disable(except=[]) {
         const buttonsToDisable = this.buttons.filter( button => !except.includes(button));
         console.log(`disabling playback on ${buttonsToDisable}`)
         buttonsToDisable.forEach( button => { this[button].disabled = true });
-        g.canvas.removeEventListener('click', this.toggleStart.bind(this));
+        g.canvas.removeEventListener('click', this.toggleStart);
+
     },
     enable(except=[]) {
         const buttonsToEnable = this.buttons.filter( button => !except.includes(button));
         console.log(`enabling playback on ${buttonsToEnable}`);
         buttonsToEnable.forEach( button => { this[button].disabled = false });
-        g.canvas.addEventListener('click', this.toggleStart.bind(this));
+        g.canvas.removeEventListener('click', this.toggleStart);
+        g.canvas.addEventListener('click', this.toggleStart);
     },
     toggleStart() {
-        if (pageState === 'playback') {
+        if (PageState.currentState === 'playback') {
             if (g.playing) {
                 g.stop();
                 this.startStopButton.innerText = 'Start';
@@ -49,6 +50,9 @@ Playback = {
                 this.startStopButton.innerText = 'Pause';
             }
         }
+    },
+    stop() {
+        g.stop();
     },
     rewind() {
         if (g.playing) g.stop();

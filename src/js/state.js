@@ -1,108 +1,64 @@
-class PageState {
-    static #currentState;
+DEFAULT_EDITOR_DIMENSIONS = [70,70];
 
-    static get EDIT() {
-        return 'edit'
-    }
-
-    static get PLAYBACK() {
-        return 'playback'
-    }
-
-    static get currentState() {
-        return this.#currentState;
-    }
-
-    static set currentState(state) {
-        state = state.toUpperCase();
-        if (this[state]) {
-            this.#currentState = this[state];
-            document.dispatchEvent(new CustomEvent('stateChange', { detail: { state: this.currentState}}));
-        }
-    }
-}
-
-class InitialStateEditor {
-    static initialState;
-    static squares;
-    static firstSquareValue;
-
-
-    static init(matrix) {
-        grid = g.grid;
+class Editor {
+    #matrix;
+    #states = [];
+    constructor(canvas=document.querySelector('canvas'),dim=DEFAULT_EDITOR_DIMENSIONS,initialState) {
         PageState.currentState = 'edit';
+        // Underlying matrix the grid 'binds' to 
+        this.#matrix = Matrix.getNullMatrix(...dim);
+        this.grid = new Grid(canvas);
+        this.grid.init(dim,true, initialState || undefined);
+        this.onMouseDown = this.onMouseDown.bind(this);
 
-        if (matrix) {
-            this.initialState = matrix
-        } else {
-            this.initialState = Matrix.getNullMatrix(...grid.dimensions);
-        }
+        canvas.addEventListener('mousedown', this.onMouseDown);
 
-        grid.clear();
-        grid.init(Matrix.getDimensions(this.initialState), grid.gridLines);
-
-        this.squares = [];
-        this.firstSquareValue = [];
-
-        document.addEventListener('mousedown', this.onMouseDown);
     }
 
-    // Set the square color
-    static toggleSquare (square) {
-        Matrix.setItem(this.initialState, square, !Matrix.getItem(this.initialState, square));
+    get matrix() {
+        return JSON.parse(JSON.stringify(this.#matrix));
     }
 
-    // Much faster than event-based trigger
-    static render = _ =>  grid.render(colorizeMatrix(this.initialState));
+    setSquare(matrix, [i,j],value) {
+        Matrix.setItem(matrix, [i,j], value);
+        this.render(matrix);
+    }
 
-    // Drag the cursor across the grid, assigning each crossed square
-    // the appropriate value
-    static onMouseMove = e => {
-        const square = grid.squareFromPoint([e.clientX,e.clientY]);
-        if (!square) return;
-        if (!this.squares.includes(JSON.stringify(square))) {
-            if (Matrix.getItem(this.initialState,square) !== this.firstSquareValue) {
-                Matrix.setItem(this.initialState, square, this.firstSquareValue )
+    onMouseDown(e) {
+        // Save current state for persistence
+        const currentState = JSON.parse(JSON.stringify(this.#matrix));
+        const lastState = this.#states[0];
+
+        if (!Matrix.areEqual(lastState,currentState)) this.#states.push(currentState);
+        
+        const onCanvasDrag = e => {
+            const square = this.grid.squareFromPoint([e.clientX,e.clientY]);
+            if (square) {
+                this.setSquare(this.#matrix, square, firstValue);
             }
-            this.squares.push(JSON.stringify(square));
         }
-        this.render();
-    }
-    static onMouseDown = e => {
-        this.squares = [];
-        // Toggle the value of the first clicked square
-        const firstSquare = grid.squareFromPoint([e.clientX,e.clientY]);
-        if  (firstSquare) {
-            this.toggleSquare(firstSquare);
-            this.render();
+
+        // Toggle the value fo the first clicked square,
+        // which changes all squares to that value upon drag.
+        const firstSquare = this.grid.squareFromPoint([e.clientX,e.clientY]);
+        const firstValue = !Matrix.getItem(this.#matrix,firstSquare);
+
+        if (firstSquare) {
+            this.setSquare(this.#matrix, firstSquare, firstValue);
+
+            document.addEventListener('mousemove', onCanvasDrag );
+            document.addEventListener('mouseup', _ => {
+                document.removeEventListener('mousemove',onCanvasDrag)
+            });
+            
         }
-        // Set all other crossed squares to the value of the first square
-        this.firstSquareValue = firstSquare ? Matrix.getItem(this.initialState, firstSquare) : 0;
-        document.addEventListener('mousemove', this.onMouseMove);
-        document.addEventListener('mouseup', this.onMouseUp);
     }
 
-    static onMouseUp = _ => document.removeEventListener('mousemove', this.onMouseMove);
-
-    // Remove added eventlisteners
-    static cleanUp = () => {
-        this.firstSquares = [];
-        this.firstSquareValue = null;
-        document.removeEventListener('mousedown', this.onMouseDown);
-        document.removeEventListener('mousemove', this.onMouseMove);
-        document.removeEventListener('mouseup', this.onMouseUp);
+    render(matrix) {
+        this.grid.render(Colorizer.monochrome(matrix));
     }
 
-    static submit() {
-        dispatchInitialState(Matrix.map(this.initialState, a => a ? 1 : 0)) ;
-    }
-
-    static random(dimensions=grid.dimensions) {
-        PageState.currentState = 'edit';
-        dispatchInitialState(GameOfLifeMatrix.randomInitialState(dimensions[0]).matrix);
-        PageState.currentState = 'playback';
+    cleanup() {
+        canvas.removeEventListener('mousedown');
     }
 }
-
-
-

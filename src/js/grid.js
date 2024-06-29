@@ -132,10 +132,6 @@ class Grid {
         this.render(this.#state, gridLines);
     }
 
-    reinit() {
-        this.init([this.rows,this.columns], this.gridLines, this.#state)
-    }
-
     get state() {
         return Object.freeze(this.#state);
     }
