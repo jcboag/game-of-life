@@ -3,8 +3,10 @@ const WINDOW_RESIZE_FACTOR = 0.75;
 const DEFAULT_SIZE = 50;
 const DEFAULT_SPEED = 1; // Grid updates per SECOND 
 
-var g,
+var canvas,
+    g,
     editor,
+    playback,keyboardShortcuts,
     maxCanvasHeight,maxCanvasWidth;
 
 
@@ -74,48 +76,49 @@ function reinitGrid() {
     if (grid) grid.init([grid.rows,grid.columns], grid.gridLines, grid.state);
 }
 
-function rescaleGrid(grid,scaleFactor) {
-    fitCanvasToWindow();
-    grid.gridEngine.canvas.width = maxCanvasWidth * scaleFactor;
-    grid.gridEngine.canvas.height = maxCanvasHeight * scaleFactor;
-}
+// function rescaleGrid(grid,scaleFactor) {
+//     fitCanvasToWindow();
+//     grid.gridEngine.canvas.width = maxCanvasWidth * scaleFactor;
+//     grid.gridEngine.canvas.height = maxCanvasHeight * scaleFactor;
+// }
 
-function initializeGameOfLife(initialState=DEFAULT_SIZE,speed=10,canvas) {
+function initializeGameOfLife(initialState=DEFAULT_SIZE,speed=10) {
+    PageState.currentState = 'playback';
     g = new GameOfLife({initialState, speed, canvas});
     g.initGrid();
+    // speed = Settings.get('speed');
+    // dimensions = Settings.get('dimensions')?.at(0);
+    // initializeGameOfLife(dimensions,speed,canvas)
 }
 
-function getPageState() {
-    return g.gameState.set('gridLines', g.grid.gridLines);
+function initializeEditor() {
+    editor = new Editor();
 }
 
 function init() {
     Settings.init();
-    PageState.currentState = 'playback';
 
-    const canvas = document.querySelector('canvas');
+    const initialState = 'game';
+
+    canvas = document.querySelector('canvas');
+
     fitCanvasToWindow(canvas);
 
-    const speed = Settings.get('speed');
-    const dimensions = Settings.get('dimensions')?.at(0);
+    playback = new Playback();
+    keyboardShortcuts = new KeyboardShortcuts();
 
-    initializeGameOfLife(dimensions,speed,canvas)
-
-    Playback.init();
-    KeyboardShortcuts.init();
-
-    document.addEventListener('pageStateChange', _ => handlePageStateChange(PageState.currentState));
-
+    document.addEventListener('pageStateChange', e =>  {
+        const state = e.detail.state;
+        [ playback, keyboardShortcuts ].forEach( obj => obj?.onStateChange ? obj.onStateChange(state) : null );
+    });
 
     window.addEventListener('resize', () => {
         fitCanvasToWindow(canvas);
     });
 
-    const customStateButton = document.getElementById('customState');
-    customStateButton.onclick = () => { 
-        editor = new Editor(); 
-    } 
+    initialState === 'game' ? initializeGameOfLife() : initializeEditor();
 }
+
 
 class PageState {
     static #currentState;
@@ -140,17 +143,5 @@ class PageState {
         }
     }
 }
-
-function handlePageStateChange(state) {
-    if (state === 'edit' ) {
-        activeGrid = editor?.grid;
-        Playback.disable();
-        KeyboardShortcuts.disable();
-
-    } else if (state === 'playback') {
-        Playback.enable();
-        KeyboardShortcuts.enable();
-    }
-} 
 
 init();
