@@ -115,29 +115,61 @@ class Colorizer {
 // `Grid` can render matrices of hex/RGBA/color values
 
 class Grid {
-    #state;
-    #gridLines;
-
-    static blankState = (m,n) => Matrix.getNullMatrix(m,n);
-
-    constructor(el=document.querySelector('canvas')) {
+    constructor(el = document.querySelector('canvas')) {
         this.gridEngine = new CanvasGridEngine(el);
+        this.gridlines = true;
     }
 
-    init([m,n],gridLines,initialState) {
-        [this.rows, this.columns] = [m,n];
-        this.gridEngine.init(this.rows,this.columns);
-        this.nullState = Number.isInteger(initialState) ? state : Grid.blankState(this.rows,this.columns);
-        this.#state = (initialState && Matrix.isMatrixLike(initialState)) ? initialState : this.nullState;
-        this.render(this.#state, gridLines);
+    init({ dimensions, gridlines = true, initialState }) {
+        [this.rows, this.columns] = dimensions;
+        this.gridEngine.init(this.rows, this.columns);
+        this.gridlines = gridlines;
+        this.render(initialState);
     }
 
-    get state() {
-        return Object.freeze(this.#state);
+    render(state) {
+        this.clear();
+        Matrix.forEach(state, (value, index) => this.setSquareColor(index, value));
+        if (this.gridlines) this.addGridLines();
     }
 
-    get dimensions() {
-        return this.rows && this.columns ? [ this.rows, this.columns ] : null;
+    clear() {
+        this.gridEngine.clearGrid();
+    }
+
+    setSquareColor([i, j], color) {
+        if (color === null) {
+            this.clearSquare([i, j]);
+        } else {
+            this.gridEngine.fillRect(...this.getSquarePosition([i, j]), this.squareWidth, this.squareHeight, color);
+        }
+    }
+
+    clearSquare([i, j]) {
+        this.gridEngine.clearRect(...this.getSquarePosition([i, j]), this.squareWidth, this.squareHeight);
+    }
+
+    getSquarePosition([i, j]) {
+        return [this.squareWidth * i, this.squareHeight * j];
+    }
+
+    getSquareFromPoint([x,y]){
+        const canvasPosition = this.gridEngine.canvasPositionFromPoint([x,y]);
+        return canvasPosition ? this.gridEngine.squareFromCanvasPosition(canvasPosition) : null;
+    }
+
+    addGridLines() {
+        for (let i = 0; i < this.rows; i++) {
+            this.addLine('x', i);
+        }
+        for (let j = 0; j < this.columns; j++) {
+            this.addLine('y', j);
+        }
+    }
+
+    addLine(axis, p) {
+        p = Math.floor(p) * (axis === 'x' ? this.gridEngine.squareHeight : this.gridEngine.squareWidth);
+        this.gridEngine.addLineAcrossCanvas(axis, Math.floor(p));
     }
 
     get squareWidth() {
@@ -146,78 +178,5 @@ class Grid {
 
     get squareHeight() {
         return this.gridEngine.squareHeight;
-    }
-
-    getSquarePosition([i,j]) {
-        return [this.squareWidth * i , this.squareHeight * j];
-    }
-
-    midPoint([i,j]) {
-        return [ this.squareWidth * ( 2 * i + 1 ) / 2, this.squareHeight * ( 2 * j + 1 ) / 2 ];
-    }
-
-    getSquareColor([i,j]) {
-        return this.gridEngine.getPointRGBA(this.midPoint([i,j]));
-    }
-
-    setSquareColor([i,j], color) {
-        if (color === null) this.clearSquare([i,j]);
-        else this.gridEngine.fillRect(...this.getSquarePosition([i,j]), this.squareWidth, this.squareHeight, color);
-    }
-
-    clearSquare([i,j]) {
-        this.gridEngine.clearRect(...this.getSquarePosition([i,j]),this.squareWidth,this.squareHeight);
-    }
-
-    // axis: x or y
-    // `p` : row (if axis is `x`) and col ( if axis `y` )
-    #addLine(axis,p) {
-        p = Math.floor(p) * this.gridEngine.squareWidth;
-        this.gridEngine.addLineAcrossCanvas(axis, Math.floor(p) ); 
-    }
-
-    addGridLines() {
-        for (let i=0; i < this.rows; i++) {
-            this.#addLine('x',i)
-        }
-        for (let j=0; j < this.columns; j++ ) {
-            this.#addLine('y',j)
-        }
-        this.#gridLines = true;
-    }
-
-    // Just re-render the stored state
-    removeGridLines() {
-        this.render(this.#state,false);
-        this.#gridLines = false;
-    }
-
-    get gridLines() {
-        return this.#gridLines;
-    }
-
-    render(state, gridLines=this.gridLines) {
-        if (!state) state = this.#state;
-        Matrix.forEach(state, (a,index) => this.setSquareColor(index, a));
-        if (gridLines) {
-            this.addGridLines();
-            this.#gridLines = true;
-        } else {
-            this.#gridLines = false;
-        }
-        this.#state = state;
-    }
-
-    clear() {
-        this.gridEngine.clearGrid();
-    }
-
-    squareFromPoint([x,y]){
-        const canvasPosition = this.gridEngine.canvasPositionFromPoint([x,y]);
-        return canvasPosition ? this.gridEngine.squareFromCanvasPosition(canvasPosition) : null;
-    }
-
-    get currentState() {
-        return new Map([ [ 'dimensions', this.dimensions ],  [ 'gridLines', this.gridLines ]]);
     }
 }

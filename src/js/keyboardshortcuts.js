@@ -1,37 +1,47 @@
 class KeyboardShortcuts  {
-    #enabled = false;
-    static getDefaultKeyMap = _ => ({
-        ArrowLeft: playback.rewind,
-        ArrowRight:playback.forward,
-        ArrowUp: playback.reset,
-        Space:  playback.toggleStart,
-    });
 
-    get enabled() {
-        return this.#enabled
-    }
+    static defaultShortcuts = new Map([
+
+        [ 
+            GameOfLife.appname,
+            [
+                ['ArrowLeft', () => window.app.previousState() ],
+                ['ArrowRight', () => window.app.nextState() ],
+                ['ArrowUp', () => window.app.reset() ],
+                ['Space', () => window.app.toggleStartStop() ],
+                ['ArrowDown', () => Page.editCurrentState()  ]
+
+            ]
+        ],
+
+        [
+            Editor.appname,
+            [
+                ['ArrowRight', () => window.getInitialStateFromEditor()]
+
+            ]
+        ]
+    ]);
 
     constructor(keyMap) {
-        this.keyMap = keyMap || KeyboardShortcuts.getDefaultKeyMap();
-    }
 
-    set enabled(enabled) {
-        const method = enabled ? 'addEventListener' : 'removeEventListener';         
-        document[method]('keydown', this.handleKeyDown)
-        this.#enabled = enabled;
-    }
+        if ( KeyboardShortcuts.instance ) return KeyboardShortcuts.instance;
+        this.keyMap = keyMap 
+        this.enabled = true;
 
-    onStateChange(state) {
-        this.enabled = state === 'playback' ? true : false;
+        document.addEventListener( 'keydown', this.handleKeyDown )
     }
 
     handleKeyDown = e => {
-        const keyMap = this.keyMap;
-        let action = keyMap[e.code.replace(/Key|Digit/,'')];
-        if (action) {
-            e.preventDefault();
-            e.stopPropagation();
-            action();
+        if (this.keyMap && this.enabled) {
+            let action = this.keyMap.get(e.code.replace(/Key|Digit/,''));
+            if (action) {
+                e.preventDefault();
+                e.stopPropagation();
+                action();
+            }
+                
         }
     }
 }
+

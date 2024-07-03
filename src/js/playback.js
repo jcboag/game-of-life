@@ -1,76 +1,70 @@
 class Playback {
-    constructor(initialSpeed=10) {
-
-        [ 'startStop', 'rewind', 'forward', 'reset' ].forEach( buttonType => {
-            this[`${buttonType}Button`] = document.querySelector(`#${buttonType}`);
-
-        });
-
+    constructor(app) {
+        this.app = app;
+        this.startStopButton = document.getElementById('startStop');
+        this.rewindButton = document.getElementById('rewind');
+        this.forwardButton = document.getElementById('forward');
+        this.resetButton = document.getElementById('reset');
         this.speedSlider = document.getElementById('speed');
-        this.speed = initialSpeed;
-    } 
 
-    setHandlers(playback) {
-        const method = playback ? 'addEventListener' : 'removeEventListener';
-
-        this.startStopButton.onclick = playback ? _ => this.toggleStart() : null;
-
-        ['rewind', 'forward', 'reset'].forEach(action =>
-            this[`${action}Button`].onclick = playback ? _ => this[action]() : null );
-
-        canvas[method]('click', this.toggleStart);
+        this.app = app;
+        this.setEventListeners();
+        this.enabled = true;
     }
 
-    onStateChange(state) {
-        console.log('statechanges');
-        switch (state) {
-            case 'playback':
-                this.setHandlers(true);
-                break;
-            case 'edit':
-                this.setHandlers(false);
-                break;
+    setEventListeners() {
+
+        if (this.app.appname === 'gameoflife') {
+
+            // Set the value of the button based on game state
+            const setStartStopButton = () => { this.startStopButton.innerText = this.app.playing ? 'Stop' : 'Start'; }
+
+            setStartStopButton();
+
+            this.startStopButton.onclick = () => {
+                if (!this.enabled) return;
+                this.app.toggleStartStop();
+                setStartStopButton();
+            };
+
+            this.rewindButton.onclick = () => this.enabled && this.app.previousState();
+            this.forwardButton.onclick = () => this.enabled && this.app.nextState();
+            this.resetButton.onclick = () => this.enabled && this.app.reset();
+
+            this.speedSlider.oninput = e => this.enabled && (this.app.speed = Number(e.target.value));
+
+        } else if ( this.app.appname ===  'editor') {
+
+            this.startStopButton.onclick = () => {
+                window.getInitialStateFromEditor({run: true});
+            }
         }
     }
 
-    toggleStart = () => {
-        this[ g.playing ? 'stop' : 'start' ]();
-        this.startStopButton.innerText = g.playing ? 'Pause' : 'Start';
+    getInitialStateFromEditor() {
     }
 
-    start() {
-        g.start();
+    enable() {
+        this.enabled = true;
+        this.updateUI();
     }
 
-    stop() {
-        g.stop();
+    disable() {
+        this.enabled = false;
+        this.app.stop(); 
+        this.updateUI();
     }
 
-    forward() {
-        if (g.playing) g.stop();
-        g.nextState();
-
+    updateUI() {
+        this.startStopButton.disabled = !this.enabled;
+        this.rewindButton.disabled = !this.enabled;
+        this.forwardButton.disabled = !this.enabled;
+        this.resetButton.disabled = !this.enabled;
+        this.speedSlider.disabled = !this.enabled;
     }
 
-    rewind() {
-        if (g.playing) g.stop();
-        g.previousState();
-
+    cleanup() {
+        [ 'startStopButton', 'rewindButton','forwardButton', 'resetButton'].forEach( buttonName => { this[buttonName].onclick  = null; });
     }
-
-    reset() {
-        g.reset();
-
-    }
-
-    get speed() {
-        return g.speed;
-
-    }
-
-    set speed(value) {
-        if (g) g.speed = value;
-        this.speedSlider.value = value;
-    }
-
 }
+

@@ -1,15 +1,19 @@
-// import { Matrix } from './matrix';
-// import { Grid, Colorizer} from './grid';
-
-// Matrix with only ones and zeros, an algorithm to classify entries, and a transition function.
+// Matrix with only ones and zeros
 class GameOfLifeMatrix extends Matrix {
+    static convert(matrix) {
+        matrix = matrix instanceof Matrix ? matrix.matrix : matrix;
+        return Matrix.map(matrix , a => a ? 1 : 0 );
+    }
     static randomInitialState(size) {
         return new Matrix(Matrix.getNullMatrix(size, size)).map(() => Math.random() > 0.5 ? 1 : 0);
     }
     constructor(state = null) {
         if (Number.isInteger(state)) state = GameOfLifeMatrix.randomInitialState(state).matrix;
+
         state = state instanceof Matrix ? state.matrix : state;
+
         if (!Matrix.isMatrixLike(state)) throw Error("Invalid input");
+
         super(state);
         // A cell dies if it has more neighbors than overPopNumber or 
         // less neighbors than underPopNumber
@@ -29,10 +33,6 @@ class GameOfLifeMatrix extends Matrix {
         return alive;
     }
 
-    get filledCells() {
-        return this.aliveCells;
-    }
-
     isAlive(cell) {
         return this.getItem(cell) === 1;
     }
@@ -50,32 +50,83 @@ class GameOfLifeMatrix extends Matrix {
     get nextState() {
         return new GameOfLifeMatrix(this.map((_, cell) => this.isAliveNextState(cell) ? 1 : 0));
     }
+
+    setDimensions() {
+        this.set( 'dimensions', app.dimensions );
+    }
 }
 
-class GameOfLife {
-    #states;
-    #statePosition;
-    #speed = 10;
-    constructor( {initialState , speed = 10, canvas } = {} ) {
-        if (Number.isInteger(initialState) && initialState > 0 || Matrix.isMatrixLike(initialState)) initialState = new GameOfLifeMatrix(initialState);
-        else if (initialState?.matrix) initialState = new GameOfLife( initialState.matrix );
-        else throw Error("Incorrect Input into `GameOfLife` contstructor");
-
-        this.setCanvas(canvas);
-
-        this.speed = speed || this.#speed;
-        this.intervalId = null;
-
-        this.#states = [ initialState ];
-        this.#statePosition = 0;
+class StateManager {
+    #statePosition = 0
+    constructor(initialState) {
+        // Objects input into the`#states` are assumed to have `nextState` methods
+        this.states = [ initialState ];
     }
 
-    get gameState() {
-        return new Map([
-            ['speed', this.speed], 
-            ['dimensions', this.grid.dimensions],
-        ])
+    get statePosition() {
+        return this.#statePosition;
+    }
 
+    set statePosition(n) {
+        if ( n >= 0 && n <= this.states.length) this.#statePosition = n;
+    }
+
+    get currentState()  {
+        return this.states[ this.statePosition ];
+    }
+
+    addState(state) {
+        this.states.push(state);
+    }
+
+    nextState() {
+        if ( this.statePosition === (this.states.length-1)) {
+            this.addState( this.currentState.nextState );
+        }
+        this.statePosition++;
+    }
+
+    previousState() {
+        if ( this.statePosition > 0 ) {
+            this.statePosition--;
+        }
+    }
+
+
+}
+
+// Handles the processing of playback on the `grid`
+class GameOfLife {
+    static appname = 'gameoflife';
+
+    #speed = 10;
+
+    constructor( {initialState = 10 , canvas, speed, gridlines} = {} ) {
+
+        if (!(Number.isInteger(initialState) || initialState.matrix || Matrix.isMatrixLike(initialState))) throw Error("Invalid initial state for Game Of Life");
+
+        this.stateManager = new StateManager( new GameOfLifeMatrix(initialState) );
+
+        this.speed = speed;
+
+        this.intervalId = null;
+
+        this.grid = new Grid(canvas);
+
+        this.initGrid(gridlines);
+    }
+
+
+    get appname() {
+        return GameOfLife.appname;
+    }
+
+    get dimensions() {
+        return [this.grid.rows, this.grid.columns]
+    }
+
+    initGrid(gridlines) {
+        this.grid.init( { dimensions: this.stateManager.currentState.dimensions, gridlines, initialState: this.colorizedMatrix} );
     }
 
     get playing() {
@@ -100,45 +151,49 @@ class GameOfLife {
 
     }
 
-    setCanvas(canvas) {
-        this.canvas = canvas;
-    }
-
-    initGrid() {
-        if (!this.canvas) throw new Error('Canvas not set');
-        const dimensions = Matrix.getDimensions(this.currentState.matrix);
-        this.grid = new Grid(this.canvas);
-        this.grid.init( dimensions, gridLines, Colorizer.monochrome(this.currentState.matrix));
-    }
-
+    // Display the current state of the game on the grid
     render() {
-        if (this.canvas) this.grid.render(Colorizer.monochrome(this.#states[this.statePosition].matrix));
+        this.grid.render( this.colorizedMatrix);
     }
 
-    get dimensions() {
-        return this.currentState.dimensions;
+    get colorizedMatrix() {
+        return Colorizer.monochrome(this.stateManager.currentState.matrix);
     }
 
-    get statePosition() {
-        return this.#statePosition;
+    set gridlines(bool) {
+        if ( typeof bool === 'boolean' ) this.grid.gridlines = bool;
+        this.render();
     }
+
+    get gridlines() {
+        return this.grid.gridlines
+    }
+
 
     get currentState() {
-        return this.#states[this.statePosition];
+        return this.stateManager.currentState.matrix;
     }
 
-    set statePosition(index) {
-        if (!(Number.isInteger(index) && index >= 0 && index <= this.#states.length)) throw Error("Invalid Index");
-        else {
-            if (index === this.#states.length) {
-                this.#states.push(this.currentState.nextState);
-            }
-            this.#statePosition = index;
-            this.render();
-        }
+    goToState(n) {
+        this.stateManager.statePosition = n;
+        this.render();
     }
+
+    nextState() {
+        this.stateManager.nextState();
+        this.render();
+    }
+
+    previousState() {
+        this.stateManager.previousState();
+        this.render();
+    }
+
+    reset() {
+        this.goToState(0);
+    }
+
     start() {
-        if (this.playing) return;
         this.intervalId = setInterval(() => {
             this.nextState();
         }, this.updateInterval); 
@@ -150,11 +205,6 @@ class GameOfLife {
         this.intervalId = null;
     }
 
-    reset() {
-        if (this.playing) this.stop();
-        this.statePosition = 0;
-    }
-
     toggleStartStop() {
         if (this.playing) {
             this.stop();
@@ -162,18 +212,5 @@ class GameOfLife {
             this.start();
         }
     }
-
-    nextState() {
-        if (this.statePosition < this.#states.length - 1) {
-            this.statePosition++;
-        } else {
-            const nextState = this.#states[this.statePosition].nextState;
-            this.#states.push(nextState);
-            this.statePosition++;
-        }
-    }
-
-    previousState() {
-        if (this.statePosition != 0) this.statePosition--;
-    }
 }
+

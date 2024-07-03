@@ -20,9 +20,13 @@
             <input type="range" id="speed" min=1 max=15>
         </div>
     </div>
-    <div>
+
+    <div id="stateManager">
+    <button id="modifyState">Modify Current State</button>
     <button id="customState">Create Custom State</button>
     <button id="randomState">Random</button>
+    </div>
+
     <div id="dimensions">
         <div id="rows">
             <label for="mRows"># Rows</label>
@@ -35,16 +39,16 @@
     </div>
     </div>
     <div id="change">
-        <div id="gridLinesDiv"> <input type="checkbox" id="gridLines"> <label for="gridLines">Gridlines</label></div>
+        <div id="gridLinesDiv"> <input type="checkbox" id="gridlines"> <label for="gridlines">Gridlines</label></div>
         <div id="scale"> 
-            <label for="scaleFactor">Scale Factor</label>
             <input type="text" id="scaleFactor" size=2>
         </div>
     </div>
+    <script src="src/js/settings.js"></script>
     <script src="src/js/matrix.js"></script>
     <script src="src/js/grid.js"></script>
     <script src="src/js/gameoflife.js"></script>
-    <script src="src/js/state.js"></script>
+    <script src="src/js/editor.js"></script>
     <script src="src/js/playback.js"></script>
     <script src="src/js/keyboardshortcuts.js"></script>
     <script src="src/js/main.js"></script>

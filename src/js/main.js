@@ -1,147 +1,224 @@
-const WINDOW_RESIZE_FACTOR = 0.75;
+const DEFAULT_DIMENSIONS = [25,25];
+const DEFAULT_GAME_OF_LIFE = [25,25];
+const DEFAULT_GAME_SPEED = 5;
 
-const DEFAULT_SIZE = 50;
-const DEFAULT_SPEED = 1; // Grid updates per SECOND 
+class Page {
+    static init() {
+        this.shortcuts = new KeyboardShortcuts();
 
-var canvas,
-    g,
-    editor,
-    playback,keyboardShortcuts,
-    maxCanvasHeight,maxCanvasWidth;
+        this.customStateButton = document.getElementById('customState');
+        this.randomStateButton = document.getElementById('randomState');
+        this.modifyStateButton = document.getElementById('modifyState');
 
+        this.randomStateButton.onclick = () => this.initializeGameOfLife();
+        this.modifyStateButton.onclick = () => this.editCurrentState();
+        this.customStateButton.onclick = () => this.initializeEditor();
 
-class Settings {
-    static #key = 'lastPageState';
-    static #settings;
+        this.canvas = document.querySelector('canvas');
+        this.setInitialApp();
 
-    static defaults = new Map([
-        ['gridScale', 1],
-        ['gridLines', true],
-        ['dimensions', [50,50]],
-        ['speed', 10],
-        ['state', 'playback']
-    ])
+        CanvasManipulator.fitCanvasToScreen(Page.canvas);
 
-    static init(reset=false) {
-        if (reset) {
-            this.#settings = this.defaults;
-            this.save();
-        } else {
-            this.load();
+        this.trackPageChanges();
+
+        window.addEventListener( 'resize', () => {
+            if (Page.canvas) {
+                CanvasManipulator.fitCanvasToScreen(Page.canvas);
+            }
+            window.app.render()
+        });
+    }
+
+    static setInitialApp() {
+        const dimensions = window.settings.get('dimensions') || DEFAULT_DIMENSIONS;
+        const gridlines = window.settings.get('gridlines');
+
+        const initGameOfLife = () => this.initializeGameOfLife(dimensions[0], gridlines);
+
+        switch(window.settings.get('lastApp')) {
+            case 'editor': 
+                this.initializeEditor({dimensions, gridlines}); 
+                break
+            case 'gameoflife': 
+                initGameOfLife();
+                break;
+            default:  
+                initGameOfLife();
         }
-        this.load(reset);
-        document.addEventListener('pagePropsChanged', _ => Settings.save());
+        window.settings.savePageState();
     }
 
-    static load() {
-        this.#settings = new Map(JSON.parse(localStorage.getItem(this.#key))) || this.defaults;
+    static cleanup() {
+        ['app', 'playback'].forEach( objName => {
+            const obj = window[objName];
+            if (obj?.cleanup) obj.cleanup();
+            window[objName] = null;
+        });
+
     }
 
-    static save() {
-        localStorage.setItem(this.#key, JSON.stringify(Array.from(this.#settings.entries())));
+    static setApp(app) {
+        if (window.app) {
+            if (app.stop) app.stop();
+            this.cleanup();
+        }
+
+        window.app = app;
+
+        GridManipulator.init();
+
+        window.playback = new Playback(app);
+
+        if (this.shortcuts) this.shortcuts.keyMap = this.getDefaultKeymap(app);
+
+        window.settings.set('lastApp', app.appname);
     }
 
-    static get(setting) {
-        return this.#settings.get(setting) || this.defaults.get(setting);
+    static initializeGameOfLife(initialState,gridlines=app.gridlines) {
+        initialState = initialState || app?.dimensions?.at(0) || DEFAULT_GAME_OF_LIFE[0];
+        const speed = window.settings.get('speed') || DEFAULT_GAME_SPEED;
+        const canvas = this.canvas;
+        const gameOfLife = new GameOfLife({initialState, speed, canvas, gridlines});
+        this.setApp(gameOfLife);
     }
 
-    static set(setting,value) {
-        this.#settings.set(setting,value);
-        this.save();
+    static initializeEditor({initialState,dimensions=app.dimensions, gridlines=app.gridlines}={}) {
+        const canvas = this.canvas;
+        const editor = new Editor({canvas, initialState, dimensions, gridlines});
+        this.setApp(editor);
+    }
+
+    static getDefaultKeymap(app) {
+        return new Map(KeyboardShortcuts.defaultShortcuts.get( app.appname ));
+    }
+
+    static trackPageChanges() {
+        document.addEventListener( 'change', e =>{
+            console.log('saving state...');
+            if (['rows','cols','speed'].includes(e.target.id))
+                window.settings.savePageState();
+        });
+
+        document.addEventListener('input', e => {
+            console.log(e.target.id)
+            if ([ 'gridlines' ].includes( e.target.id )) {
+                window.settings.savePageState();
+            }
+        })
+    }
+
+    // Initialize the editor with the underlying matrix of the
+    // current grid
+    static editCurrentState() {
+        if (window.app.appname === GameOfLife.appname) {
+            const currentState = window.app.currentState;
+            Page.initializeEditor({ initialState: currentState });
+        }
+    }
+
+}
+
+// Initialize the state of the game using the underlying
+//  matrix of the current grid
+function getInitialStateFromEditor( { run = false } = {}) {
+    const matrix = window.app.matrix;
+    if ( window.app.appname === Editor.appname )  {
+        Page.initializeGameOfLife(GameOfLifeMatrix.convert( matrix ));
+        if (run) playback.startStopButton.click();
     }
 }
 
+// class StateManipulator {
 
-function fitCanvasToWindow(canvas,scaleFactor=WINDOW_RESIZE_FACTOR) {
-    if (!canvas) return;
+//     static init() {
+//         this.customStateButton = document.getElementById('customState');
+//         this.randomStateButton = document.getElementById('randomState');
+//         this.modifyStateButton = document.getElementById('modifyState');
 
-    const measure =  Math.min(window.innerWidth, window.innerHeight);
-    canvas.width = canvas.height = measure * scaleFactor;
-
-    // Anytime it is resized, we need to track the max size it can 
-    // take on to properly scale it
-    maxCanvasWidth = canvas.width;
-    maxCanvasHeight = canvas.height
-    reinitGrid();
-}
-
-function reinitGrid() {
-    let grid;
-
-    switch( PageState.currentState ) {
-        case 'playback' : grid = g?.grid; break;
-        case 'edit': grid = editor?.grid; break;
-    }
-
-    if (grid) grid.init([grid.rows,grid.columns], grid.gridLines, grid.state);
-}
-
-// function rescaleGrid(grid,scaleFactor) {
-//     fitCanvasToWindow();
-//     grid.gridEngine.canvas.width = maxCanvasWidth * scaleFactor;
-//     grid.gridEngine.canvas.height = maxCanvasHeight * scaleFactor;
+//         this.randomStateButton.onclick = () => this.initializeGameOfLife();
+//         this.modifyStateButton.onclick = () => this.editCurrentState();
+//         this.customStateButton.onclick = () => this.initializeEditor();
+//     }
 // }
 
-function initializeGameOfLife(initialState=DEFAULT_SIZE,speed=10) {
-    PageState.currentState = 'playback';
-    g = new GameOfLife({initialState, speed, canvas});
-    g.initGrid();
-    // speed = Settings.get('speed');
-    // dimensions = Settings.get('dimensions')?.at(0);
-    // initializeGameOfLife(dimensions,speed,canvas)
-}
-
-function initializeEditor() {
-    editor = new Editor();
-}
-
-function init() {
-    Settings.init();
-
-    const initialState = 'game';
-
-    canvas = document.querySelector('canvas');
-
-    fitCanvasToWindow(canvas);
-
-    playback = new Playback();
-    keyboardShortcuts = new KeyboardShortcuts();
-
-    document.addEventListener('pageStateChange', e =>  {
-        const state = e.detail.state;
-        [ playback, keyboardShortcuts ].forEach( obj => obj?.onStateChange ? obj.onStateChange(state) : null );
-    });
-
-    window.addEventListener('resize', () => {
-        fitCanvasToWindow(canvas);
-    });
-
-    initialState === 'game' ? initializeGameOfLife() : initializeEditor();
-}
-
-
-class PageState {
-    static #currentState;
-
-    static get EDIT() {
-        return 'edit'
+class GridManipulator {
+    static toggleGridlines(app) {
+        if (app && typeof app?.gridlines === 'boolean') app.gridlines = !app.gridlines; 
+        if (this.gridlinesButton) this.gridlinesButton.checked = app.gridlines;
     }
 
-    static get PLAYBACK() {
-        return 'playback'
-    }
-
-    static get currentState() {
-        return this.#currentState;
-    }
-
-    static set currentState(state) {
-        state = state.toUpperCase();
-        if (this[state]) {
-            this.#currentState = this[state];
-            document.dispatchEvent(new CustomEvent('pageStateChange', { detail: { state: this.currentState}}));
+    static changeDimensions(app, [m,n]) {
+        switch( app.appname ) {
+            case 'gameoflife':
+                Page.initializeGameOfLife(m);
+                break;
+            case 'editor':
+                app.changeDimensions([m,n]);
+                break;
+            default:
+                null;
         }
+        if ( this.dimensions ) this.setDimensionInputs();
+
+        window.settings.savePageState();
+    }
+
+    static setDimensionInputs() {
+        this.rowsInput.value = app?.grid.rows;
+        this.colsInput.value = app?.grid.columns;
+    }
+
+    static init() {
+        this.gridlinesButton = document.getElementById('gridlines');
+        this.dimensions = document.getElementById('dimensions');
+        this.rowsInput = document.getElementById('mRows');
+        this.colsInput = document.getElementById('nCols');
+
+        this.gridlinesButton.checked = window.app.gridlines;
+
+        this.gridlinesButton.oninput = () => this.toggleGridlines(window.app);
+
+        this.rowsInput.value = app?.grid.rows;
+        this.colsInput.value = app?.grid.columns;
+
+        this.dimensions.onchange = e => {
+            if ( e.target.type === 'text' ) {
+                const rows = parseInt(this.rowsInput.value);
+                const cols = parseInt(this.colsInput.value);
+                if (rows && cols) {
+                    this.changeDimensions(window.app, [rows,cols] );
+                }
+
+            }
+        }
+
+    }
+
+}
+
+class CanvasManipulator {
+    static resizeCanvas(canvas, [w,h], app=window.app) {
+        canvas.width = w;
+        canvas.height = h;
+        if (app) app.render();
+    }
+
+    static scaleCanvas(canvas, scaleFactor) {
+        const [w,h] = [ canvas.width, canvas.height];
+        this.resizeCanvas(canvas, w * scaleFactor, h * scaleFactor);
+    }
+    static fitCanvasToScreen(canvas) {
+        const MAX_SCALE_FACTOR = 0.8;
+        const canvasHeight = canvas.height;
+        const canvasWidth = canvas.width;
+        let newHeight,
+            newWidth;
+        newHeight = window.innerHeight * MAX_SCALE_FACTOR;
+        newWidth = newHeight * (canvasWidth / canvasHeight);
+        this.resizeCanvas(canvas, [newWidth,newHeight]);
     }
 }
 
-init();
+window.settings = new Settings();
+
+Page.init();
