@@ -62,15 +62,10 @@ class Page {
             if (app.stop) app.stop();
             this.cleanup();
         }
-
         window.app = app;
-
         GridManipulator.init();
-
         window.playback = new Playback(app);
-
         if (this.shortcuts) this.shortcuts.keyMap = this.getDefaultKeymap(app);
-
         window.settings.set('lastApp', app.appname);
     }
 
@@ -93,18 +88,15 @@ class Page {
     }
 
     static trackPageChanges() {
-        document.addEventListener( 'change', e =>{
-            console.log('saving state...');
-            if (['rows','cols','speed'].includes(e.target.id))
-                window.settings.savePageState();
-        });
+        const relevantTarget = target => [ 'rows', 'cols', 'speed', 'gridlines' ].includes( target.id );
+        const debouncedSave = debounce( () => window.settings.savePageState(), 300 );
 
-        document.addEventListener('input', e => {
-            console.log(e.target.id)
-            if ([ 'gridlines' ].includes( e.target.id )) {
-                window.settings.savePageState();
-            }
-        })
+        const handlePossiblePageChange = e => { 
+            if (relevantTarget (e.target))  debouncedSave();
+        }
+
+        document.addEventListener( 'change', handlePossiblePageChange);
+        document.addEventListener('input', handlePossiblePageChange);
     }
 
     // Initialize the editor with the underlying matrix of the
@@ -116,6 +108,15 @@ class Page {
         }
     }
 
+}
+
+// Debounce function to limit the rate at which a function can fire
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
 }
 
 // Initialize the state of the game using the underlying
