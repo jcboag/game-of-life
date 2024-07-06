@@ -98,21 +98,15 @@ class StateManager {
 // Handles the processing of playback on the `grid`
 class GameOfLife {
     static appname = 'gameoflife';
-
     #speed = 10;
-
     constructor( {initialState = 10 , canvas, speed, gridlines} = {} ) {
 
         if (!(Number.isInteger(initialState) || initialState.matrix || Matrix.isMatrixLike(initialState))) throw Error("Invalid initial state for Game Of Life");
 
         this.stateManager = new StateManager( new GameOfLifeMatrix(initialState) );
-
         this.speed = speed;
-
         this.intervalId = null;
-
         this.grid = new Grid(canvas);
-
         this.initGrid(gridlines);
     }
 
