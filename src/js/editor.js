@@ -16,7 +16,12 @@ class Editor {
         this.onCanvasDrag = this.onCanvasDrag.bind(this);
         this.onMouseUp = this.onMouseUp.bind(this);
         this.onMouseDown = this.onMouseDown.bind(this);
+        this.onTouchStart = this.onTouchStart.bind(this);
+        this.onTouchEnd = this.onTouchEnd.bind(this);
+        this.onTouchMove = this.onTouchMove.bind(this);
+
         this.canvas.addEventListener('mousedown', this.onMouseDown);
+        this.canvas.addEventListener('touchstart', this.onTouchStart, { passive: false })
     }
 
     getInitialMatrix(initialState, dimensions) {
@@ -56,6 +61,30 @@ class Editor {
 
         document.addEventListener('mousemove', this.onCanvasDrag);
         document.addEventListener('mouseup', this.onMouseUp);
+    }   
+
+
+    onTouchStart(e) {
+        const touch = e.touches[0];
+        const startPos = this.grid.getSquareFromPoint([touch.clientX, touch.clientY]);
+        const firstValue = !Matrix.getItem(this.matrix, startPos);
+        this.updateSquare(startPos, firstValue);
+
+        document.addEventListener('touchmove', this.onTouchMove, { passive: false });
+        document.addEventListener('touchend', this.onTouchEnd);
+    }
+
+    onTouchEnd(e) {
+        document.removeEventListener('touchmove', this.onTouchMove);
+        document.removeEventListener('touchend', this.onTouchEnd);
+    }
+
+    onTouchMove(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const touch = e.touches[0];
+        const pos = this.grid.getSquareFromPoint([touch.clientX, touch.clientY]);
+        if (pos) this.updateSquare(pos, this.#firstValue);
     }
 
     onCanvasDrag(e) {
@@ -89,8 +118,11 @@ class Editor {
 
     cleanup() {
         this.canvas.removeEventListener('mousedown', this.onMouseDown);
+        this.canvas.removeEventListener('touchstart', this.onTouchStart);
         document.removeEventListener('mousemove', this.onCanvasDrag);
         document.removeEventListener('mouseup', this.onMouseUp);
+        document.removeEventListener('touchmove', this.onTouchMove);
+        document.removeEventListener('touchend', this.onTouchEnd);
     }
 
     changeDimensions([m,n]) {
