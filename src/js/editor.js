@@ -1,27 +1,121 @@
 DEFAULT_EDITOR_DIMENSIONS = [50,50];
 
+// Should communicate to `Editor` that a point
+// was touched. `Editor` then does not have to
+// concern with the the input method
+
+class EditorInputManager {
+
+    constructor(canvas, { handleInputStart, handleDrag, handleInputEnd } = {}) {
+        this.canvas = canvas;
+
+        this.handleInputStart = handleInputStart;
+        this.handleDrag = handleDrag;
+        this.handleInputEnd = handleInputEnd;
+
+        this.dragStartPosition= null;
+
+        this.bindListeners();
+
+        [ 'mousedown', 'touchstart' ].forEach(  eventName => {
+            this.canvas.addEventListener( eventName, this.onInputStart );
+        });
+    }
+
+    bindListeners() {
+        this.onInputStart = this.onInputStart.bind(this);
+        this.onDrag = this.onDrag.bind(this);
+        this.onInputEnd = this.onInputEnd.bind(this);
+    }
+
+    getPosition(e) {
+        const posSource = e.touches ? e.touches[0] : e;
+        return [posSource.clientX, posSource.clientY]
+    }
+
+    onInputStart(e) {
+        try {
+            this.dragStartPosition = this.getPosition(e);
+        } catch(e) {
+            console.error(e);
+            return;
+        }
+
+        if (e.touches) {
+            e.preventDefault();
+            document.addEventListener('touchend', this.onInputEnd, { one: true });
+            document.addEventListener('touchmove', this.onDrag, { passive: false });
+        } else {
+            document.addEventListener('mouseup', this.onInputEnd);
+            document.addEventListener('mousemove', this.onDrag);
+        }
+        this.handleInputStart(this.dragStartPosition);
+    }
+
+    onDrag(e) {
+        if ( e.touches ) e.preventDefault();
+
+        const position = this.getPosition(e);
+        if (position) this.handleDrag(position, this.dragStartPosition);
+        
+    }
+
+    onInputEnd(e) {
+        if ( e.touches ) e.preventDefault();
+
+        document.removeEventListener('touchend', this.onInputEnd);
+        document.removeEventListener('touchmove', this.onDrag);
+        document.removeEventListener('mousemove', this.onDrag);
+        document.removeEventListener('mouseup', this.onInputEnd);
+        this.dragStartPosition = null;
+
+        if ( this.handleInputEnd ) this.handleInputEnd();
+
+    }
+
+    cleanup() {
+        [ 'mousedown', 'touchstart' ].forEach(  eventName => {
+            this.canvas.removeEventListener( eventName, this.onInputStart );
+        });
+    }
+}
+
 class Editor {
     static appname = 'editor';
 
-    #firstValue = null;
-
     constructor({canvas, dimensions = null, initialState = null, gridlines = true}) {
         this.canvas = canvas;
+
         initialState = this.getInitialMatrix(initialState, dimensions);
+
         this.initGrid(initialState, gridlines);
-        this.bindEventListeners();
+        this.handleInputStart = this.handleInputStart.bind(this);
+        this.handleDrag = this.handleDrag.bind(this);
+        this.inputManager = new EditorInputManager(
+            this.canvas, 
+            {
+                handleInputStart: this.handleInputStart,
+                handleDrag : this.handleDrag,
+            }
+        );
+
     }
 
-    bindEventListeners() {
-        this.onCanvasDrag = this.onCanvasDrag.bind(this);
-        this.onMouseUp = this.onMouseUp.bind(this);
-        this.onMouseDown = this.onMouseDown.bind(this);
-        this.onTouchStart = this.onTouchStart.bind(this);
-        this.onTouchEnd = this.onTouchEnd.bind(this);
-        this.onTouchMove = this.onTouchMove.bind(this);
 
-        this.canvas.addEventListener('mousedown', this.onMouseDown);
-        this.canvas.addEventListener('touchstart', this.onTouchStart, { passive: false })
+    get appname() {
+        return Editor.appname;
+    }
+
+    get dimensions() {
+        return [this.grid.rows, this.grid.columns]
+    }
+
+    initGrid(initialState,gridlines) {
+        this.matrix = initialState;
+        const dimensions = Matrix.getDimensions(this.matrix);
+        this.grid = new Grid(this.canvas);
+        this.grid.init({dimensions, gridlines, initialState: this.matrix});
+        this.render();
     }
 
     getInitialMatrix(initialState, dimensions) {
@@ -37,74 +131,37 @@ class Editor {
         return initialState;
     }
 
-    initGrid(initialState,gridlines) {
-        this.matrix = initialState;
-        const dimensions = Matrix.getDimensions(this.matrix);
-        this.grid = new Grid(this.canvas);
-        this.grid.init({dimensions, gridlines, initialState: this.matrix});
-        this.render();
-    }
-
-    get appname() {
-        return Editor.appname;
-    }
-
-    get dimensions() {
-        return [this.grid.rows, this.grid.columns]
-    }
-
-    onMouseDown(e) {
-        const startPos = this.grid.getSquareFromPoint([e.clientX, e.clientY]);
-        const firstValue = !Matrix.getItem(this.matrix, startPos);
-
-        this.updateSquare(startPos, firstValue);
-
-        document.addEventListener('mousemove', this.onCanvasDrag);
-        document.addEventListener('mouseup', this.onMouseUp);
-    }   
-
-
-    onTouchStart(e) {
-        const touch = e.touches[0];
-        const startPos = this.grid.getSquareFromPoint([touch.clientX, touch.clientY]);
-        const firstValue = !Matrix.getItem(this.matrix, startPos);
-        this.updateSquare(startPos, firstValue);
-
-        document.addEventListener('touchmove', this.onTouchMove, { passive: false });
-        document.addEventListener('touchend', this.onTouchEnd);
-    }
-
-    onTouchEnd(e) {
-        document.removeEventListener('touchmove', this.onTouchMove);
-        document.removeEventListener('touchend', this.onTouchEnd);
-    }
-
-    onTouchMove(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const touch = e.touches[0];
-        const pos = this.grid.getSquareFromPoint([touch.clientX, touch.clientY]);
-        if (pos) this.updateSquare(pos, this.#firstValue);
-    }
-
-    onCanvasDrag(e) {
-        const pos = this.grid.getSquareFromPoint([e.clientX, e.clientY]);
-        if (pos) this.updateSquare(pos, this.#firstValue);
-    }
-
-    onMouseUp(e) {
-        document.removeEventListener('mousemove', this.onCanvasDrag);
-        document.removeEventListener('mouseup', this.onMouseUp);
-    }
-
-    updateSquare(pos, value) {
-        this.#firstValue = value;
-        Matrix.setItem(this.matrix, pos, value);
-        this.render();
-    }
-
     render() {
         this.grid.render(Colorizer.monochrome(this.matrix));
+    }
+
+    getSquare(pos) {
+        return this.grid.getSquareFromPoint(pos);
+    }
+
+    setSquareValue(index,value) {
+        try {
+            Matrix.setItem( this.matrix, index, value )
+            this.render();
+        } catch(e) {
+            
+        }
+    }
+
+    getSquareValue(index) {
+        return Matrix.getItem( this.matrix, index );
+    }
+
+    handleInputStart(pos) {
+        const square = this.getSquare(pos);
+        if (square) this.setSquareValue(square, !this.getSquareValue(square))
+    }
+
+    handleDrag(pos) {
+        const square = this.getSquare(pos);
+        const value = this.getSquareValue ( this.getSquare( this.inputManager.dragStartPosition ) );
+
+        this.setSquareValue( square, value );
     }
 
     set gridlines(bool) {
@@ -116,15 +173,6 @@ class Editor {
         return this.grid.gridlines;
     }
 
-    cleanup() {
-        this.canvas.removeEventListener('mousedown', this.onMouseDown);
-        this.canvas.removeEventListener('touchstart', this.onTouchStart);
-        document.removeEventListener('mousemove', this.onCanvasDrag);
-        document.removeEventListener('mouseup', this.onMouseUp);
-        document.removeEventListener('touchmove', this.onTouchMove);
-        document.removeEventListener('touchend', this.onTouchEnd);
-    }
-
     changeDimensions([m,n]) {
         const newMatrix = Matrix.map(
             Matrix.getNullMatrix(m,n),
@@ -133,5 +181,10 @@ class Editor {
 
         const gridlines = this.gridlines;
         this.initGrid(newMatrix, gridlines);
+    }
+
+    cleanup() {
+
+        this.inputManager.cleanup();
     }
 }
