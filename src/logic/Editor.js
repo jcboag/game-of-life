@@ -1,4 +1,8 @@
-DEFAULT_EDITOR_DIMENSIONS = [50,50];
+import Grid  from './Grid';
+import Colorizer  from './Colorizer';
+import Matrix from './Matrix';
+
+const DEFAULT_EDITOR_DIMENSIONS = [50,50];
 
 // Should communicate to `Editor` that a point
 // was touched. `Editor` then does not have to
@@ -188,3 +192,5 @@ class Editor {
         this.inputManager.cleanup();
     }
 }
+
+export default Editor;

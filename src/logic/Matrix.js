@@ -108,3 +108,5 @@ class Matrix {
         return this.matrix.map(row => row.join(' ')).join('\n');
     }
 }
+
+export default Matrix;

@@ -1,3 +1,7 @@
+import Grid  from './Grid';
+import Colorizer from './Colorizer';
+import Matrix from './Matrix';
+
 // Matrix with only ones and zeros
 class GameOfLifeMatrix extends Matrix {
     static convert(matrix) {
@@ -49,10 +53,6 @@ class GameOfLifeMatrix extends Matrix {
 
     get nextState() {
         return new GameOfLifeMatrix(this.map((_, cell) => this.isAliveNextState(cell) ? 1 : 0));
-    }
-
-    setDimensions() {
-        this.set( 'dimensions', app.dimensions );
     }
 }
 
@@ -208,3 +208,4 @@ class GameOfLife {
     }
 }
 
+export default GameOfLife;

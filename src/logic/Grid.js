@@ -1,3 +1,5 @@
+import Matrix from './Matrix';
+
 // The `GridEngine` is responsible for the lower level details of the grid,
 // While the `Grid` itself only deals with `squares`.
 
@@ -99,18 +101,6 @@ class CanvasGridEngine {
     }
 }
 
-class Colorizer {
-    static colors = {
-        white: '#ffffff',
-        black: '#000000'
-    }
-
-    static rgbaArrayToString(array) {
-        return `rgba(${[array.join(',')]})`
-    }
-    static monochrome = (matrix,invert=false) => Matrix.map( invert ? Matrix.map(matrix, a => !a) : matrix, a => a ? this.colors.black: this.colors.white )
-}
-
 // Deals with higher level operations of the grid (square level)
 // `Grid` can render matrices of hex/RGBA/color values
 
@@ -180,3 +170,5 @@ class Grid {
         return this.gridEngine.squareHeight;
     }
 }
+
+export default Grid;

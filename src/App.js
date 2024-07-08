@@ -10,7 +10,6 @@ const APP_NAMES = new Map([
 ]);
 
 function App() {
-
     const [playing, setPlaying] = useState(false);
     const [speed, setSpeed] = useState(10);
     const [gridlines, setGridlines] = useState(true);
