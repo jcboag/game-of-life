@@ -14,7 +14,7 @@ function App() {
 
     const [playing, setPlaying] = useState(false);
     const [speed, setSpeed] = useState(10);
-    const [gridlines, setGridlines] = useState(true);
+    const [gridLines, setGridlines] = useState(true);
     const [dimensions, setDimensions] = useState([100, 100]);
 
     const [app, setApp] = useState('editor');
@@ -34,11 +34,19 @@ function App() {
     return (
         <div className="App">
             <AppSelector 
-                apps={ APPS } 
-                app={ app }
-                setApp={ setApp }
+                apps = { APPS } 
+                app = { app }
+                setApp = { setApp }
+                dimensions= { dimensions }
+                gridLines= { gridLines }
+                speed = { speed }
             />
-            <Canvas app={app} />
+            <Canvas 
+                app={app} 
+                dimensions= { dimensions }
+                gridLines= { gridLines }
+                speed = { speed }
+            />
             <Playback
                 app={app}
                 playing={playing}
@@ -48,7 +56,7 @@ function App() {
             />
             <StateManager playing={playing} />
             <SettingsControls
-                gridLines={gridlines}
+                gridLines={gridLines}
                 setGridLines={setGridlines}
                 dimensions={dimensions}
                 setDimensions={updateDimensions}
