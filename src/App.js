@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState , useRef, useEffect } from 'react';
 import Canvas from './components/Canvas';
 import Playback from './components/Playback';
 import StateManager from './components/StateManager';
 import SettingsControls from './components/SettingsControls';
 import AppSelector from './components/AppSelector'
 
+import GameOfLife from './logic/GameOfLife';
+import Editor from './logic/Editor';
+
 import {CONSTANTS} from './constants';
 const { GAME_OF_LIFE, EDITOR } = CONSTANTS.APPS;
+
 
 function App() {
 
@@ -30,6 +34,25 @@ function App() {
         setDimensions([rows, cols]);
     };
 
+    const canvasRef = useRef(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        let appInstance;
+
+        if (app === GAME_OF_LIFE ) {
+            appInstance = new GameOfLife({canvas , gridlines: gridLines, speed, initialState:dimensions[0]});
+        } else if (app === EDITOR ) {
+            appInstance = new Editor({ canvas, dimensions, gridlines: gridLines});
+        }
+        return () => {
+            if (appInstance.cleanup) {
+                appInstance.cleanup();
+            }
+        };
+    }, [app]);
+
+
     return (
         <div className="App">
             <AppSelector 
@@ -41,10 +64,7 @@ function App() {
                 speed = { speed }
             />
             <Canvas 
-                app={app} 
-                dimensions= { dimensions }
-                gridLines= { gridLines }
-                speed = { speed }
+                canvasRef = { canvasRef }
             />
             <Playback
                 app={app}
