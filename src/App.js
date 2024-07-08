@@ -3,6 +3,7 @@ import Canvas from './components/Canvas';
 import Playback from './components/Playback';
 import StateManager from './components/StateManager';
 import SettingsControls from './components/SettingsControls';
+import AppSelector from './components/AppSelector'
 
 function App() {
 
@@ -32,7 +33,11 @@ function App() {
 
     return (
         <div className="App">
-            <header>{ APPS.get(app) }</header>
+            <AppSelector 
+                apps={ APPS } 
+                app={ app }
+                setApp={ setApp }
+            />
             <Canvas app={app} />
             <Playback
                 app={app}
