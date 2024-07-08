@@ -3,7 +3,24 @@ import GameOfLife from '../logic/GameOfLife';
 import Editor from '../logic/Editor';
 
 function Canvas({ app }) {
+
     const canvasRef = useRef(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        let appInstance;
+
+        if (app === 'gameoflife') {
+            appInstance = new GameOfLife({ canvas });
+        } else if (app === 'editor') {
+            appInstance = new Editor({ canvas });
+        }
+        return () => {
+            if (appInstance.cleanup) {
+                appInstance.cleanup();
+            }
+        };
+    }, [app]);
 
     return <canvas ref={canvasRef} width="750" height="750" style={{ border: '1px solid #000' }}></canvas>;
 }

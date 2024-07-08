@@ -12,13 +12,10 @@ class EditorInputManager {
 
     constructor(canvas, { handleInputStart, handleDrag, handleInputEnd } = {}) {
         this.canvas = canvas;
-
         this.handleInputStart = handleInputStart;
         this.handleDrag = handleDrag;
         this.handleInputEnd = handleInputEnd;
-
         this.dragStartPosition= null;
-
         this.bindListeners();
 
         [ 'mousedown', 'touchstart' ].forEach(  eventName => {

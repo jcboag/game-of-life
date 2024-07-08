@@ -206,6 +206,7 @@ class GameOfLife {
             this.start();
         }
     }
+
 }
 
 export default GameOfLife;
