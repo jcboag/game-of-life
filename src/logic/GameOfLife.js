@@ -14,7 +14,8 @@ class GameOfLifeMatrix extends Matrix {
     constructor(state = null) {
         if (Number.isInteger(state)) state = GameOfLifeMatrix.randomInitialState(state).matrix;
 
-        state = state instanceof Matrix ? state.matrix : state;
+        // Ensure the matrix is a "game of life " matrix
+        state =  GameOfLifeMatrix.convert( state instanceof Matrix ? state.matrix : state );
 
         if (!Matrix.isMatrixLike(state)) throw Error("Invalid input");
 
@@ -205,6 +206,10 @@ class GameOfLife {
         } else {
             this.start();
         }
+    }
+
+    get matrix() {
+        return this.stateManager?.currentState?.matrix;
     }
 
 }

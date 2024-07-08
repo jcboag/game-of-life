@@ -10,21 +10,57 @@ import Editor from './logic/Editor';
 
 import {CONSTANTS} from './constants';
 const { GAME_OF_LIFE, EDITOR } = CONSTANTS.APPS;
-
+const { GLOBAL: { SPEED, GRIDLINES, DIMENSIONS } } = CONSTANTS.DEFAULTS;
 
 function App() {
-
     const [playing, setPlaying] = useState(false);
-
-    const [speed, setSpeed] = useState(CONSTANTS.DEFAULTS.GLOBAL.SPEED);
-    const [gridLines, setGridlines] = useState(CONSTANTS.DEFAULTS.GLOBAL.GRIDLINES);
-    const [dimensions, setDimensions] = useState(CONSTANTS.DEFAULTS.GLOBAL.DIMENSIONS );
-
+    const [speed, setSpeed] = useState(SPEED);
+    const [gridLines, setGridlines] = useState(GRIDLINES);
+    const [dimensions, setDimensions] = useState(DIMENSIONS);
     const [app, setApp] = useState(EDITOR);
 
-    const toggleStart = () => {
-        setPlaying(!playing);
-    };
+    const canvasRef = useRef(null);
+    const appInstanceRef = useRef(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        const prevInstance = appInstanceRef?.current;
+
+        if (prevInstance?.cleanup)  prevInstance.cleanup();
+
+        let initialState = prevInstance?.matrix;
+
+        if (app === GAME_OF_LIFE) {
+            initialState = initialState || dimensions[0];
+            appInstanceRef.current = new GameOfLife({ canvas, initialState, speed, gridLines });
+
+            // Begin playback immediately
+            if ( playing ) { 
+                appInstanceRef.current.toggleStartStop();
+                setPlaying(false);
+            }
+
+        } else if (app === EDITOR) {
+            appInstanceRef.current = new Editor({ canvas, dimensions, gridLines, initialState });
+        }
+
+        return () => {
+            if (appInstanceRef.current?.cleanup) {
+                appInstanceRef.current.cleanup();
+            }
+        };
+    }, [app]);
+
+    const toggleGameStart = () => {
+        setPlaying(true);
+        const currentInstance = appInstanceRef.current;
+        currentInstance.toggleStartStop();
+        setPlaying(currentInstance.playing);
+    }
+
+    const toggleStart = (
+        app === EDITOR  ?  () => { setPlaying(true); setApp(GAME_OF_LIFE); }  : () => toggleGameStart()
+    );
 
     const updateSpeed = (value) => {
         setSpeed(value);
@@ -33,25 +69,6 @@ function App() {
     const updateDimensions = (rows, cols) => {
         setDimensions([rows, cols]);
     };
-
-    const canvasRef = useRef(null);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        let appInstance;
-
-        if (app === GAME_OF_LIFE ) {
-            appInstance = new GameOfLife({canvas , gridlines: gridLines, speed, initialState:dimensions[0]});
-        } else if (app === EDITOR ) {
-            appInstance = new Editor({ canvas, dimensions, gridlines: gridLines});
-        }
-        return () => {
-            if (appInstance.cleanup) {
-                appInstance.cleanup();
-            }
-        };
-    }, [app]);
-
 
     return (
         <div className="App">
@@ -66,6 +83,7 @@ function App() {
             <Canvas 
                 canvasRef = { canvasRef }
             />
+
             <Playback
                 app={app}
                 playing={playing}
