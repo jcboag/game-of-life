@@ -2,9 +2,10 @@ import React, { useEffect, useRef } from 'react';
 import GameOfLife from '../logic/GameOfLife';
 import Editor from '../logic/Editor';
 
-function Canvas({ app, gridLines, speed, dimensions }) {
+import {CONSTANTS} from '../constants';
+const { GAME_OF_LIFE, EDITOR } = CONSTANTS.APPS;
 
-    console.log( dimensions )
+function Canvas({ app, gridLines, speed, dimensions }) {
 
     const canvasRef = useRef(null);
 
@@ -12,9 +13,9 @@ function Canvas({ app, gridLines, speed, dimensions }) {
         const canvas = canvasRef.current;
         let appInstance;
 
-        if (app === 'gameoflife') {
+        if (app === GAME_OF_LIFE ) {
             appInstance = new GameOfLife({canvas , gridlines: gridLines, speed, initialState:dimensions[0]});
-        } else if (app === 'editor') {
+        } else if (app === EDITOR ) {
             appInstance = new Editor({ canvas, dimensions, gridlines: gridLines});
         }
         return () => {

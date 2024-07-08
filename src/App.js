@@ -5,19 +5,18 @@ import StateManager from './components/StateManager';
 import SettingsControls from './components/SettingsControls';
 import AppSelector from './components/AppSelector'
 
+import {CONSTANTS} from './constants';
+const { GAME_OF_LIFE, EDITOR } = CONSTANTS.APPS;
+
 function App() {
 
-    const APPS = new Map([
-        [ 'gameoflife', 'Game Of Life' ],
-        [ 'editor', 'Editor' ]
-    ]);
-
     const [playing, setPlaying] = useState(false);
-    const [speed, setSpeed] = useState(10);
-    const [gridLines, setGridlines] = useState(true);
-    const [dimensions, setDimensions] = useState([100, 100]);
 
-    const [app, setApp] = useState('editor');
+    const [speed, setSpeed] = useState(CONSTANTS.DEFAULTS.GLOBAL.SPEED);
+    const [gridLines, setGridlines] = useState(CONSTANTS.DEFAULTS.GLOBAL.GRIDLINES);
+    const [dimensions, setDimensions] = useState(CONSTANTS.DEFAULTS.GLOBAL.DIMENSIONS );
+
+    const [app, setApp] = useState(EDITOR);
 
     const toggleStart = () => {
         setPlaying(!playing);
@@ -34,7 +33,7 @@ function App() {
     return (
         <div className="App">
             <AppSelector 
-                apps = { APPS } 
+                apps = { CONSTANTS.APPS_MAP } 
                 app = { app }
                 setApp = { setApp }
                 dimensions= { dimensions }
