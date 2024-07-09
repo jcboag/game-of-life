@@ -1,14 +1,15 @@
-import React, { useState , useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Canvas from './components/Canvas';
 import Playback from './components/Playback';
 import StateManager from './components/StateManager';
 import SettingsControls from './components/SettingsControls';
-import AppSelector from './components/AppSelector'
+import AppSelector from './components/AppSelector';
 
 import GameOfLife from './logic/GameOfLife';
+
 import Editor from './logic/Editor';
 
-import {CONSTANTS} from './constants';
+import { CONSTANTS } from './constants';
 const { GAME_OF_LIFE, EDITOR } = CONSTANTS.APPS;
 const { GLOBAL: { SPEED, GRIDLINES, DIMENSIONS } } = CONSTANTS.DEFAULTS;
 
@@ -18,49 +19,47 @@ function App() {
     const [gridLines, setGridlines] = useState(GRIDLINES);
     const [dimensions, setDimensions] = useState(DIMENSIONS);
     const [app, setApp] = useState(EDITOR);
+    const [instanceTrigger, setInstanceTrigger] = useState(0);
+    const [customInitialState, setCustomInitialState] = useState(null);
 
     const canvasRef = useRef(null);
     const appInstanceRef = useRef(null);
 
-    useEffect(() => {
+    const createAppInstance = (initialState = null) => {
         const canvas = canvasRef.current;
-        const prevInstance = appInstanceRef?.current;
+        const prevInstance = appInstanceRef.current;
 
-        if (prevInstance?.cleanup)  prevInstance.cleanup();
+        if (prevInstance?.cleanup) prevInstance.cleanup();
 
-        let initialState = prevInstance?.matrix;
+        initialState = initialState ?? prevInstance?.matrix;
 
         if (app === GAME_OF_LIFE) {
             initialState = initialState || dimensions[0];
             appInstanceRef.current = new GameOfLife({ canvas, initialState, speed, gridLines });
 
-            // Begin playback immediately
-            if ( playing ) { 
-                appInstanceRef.current.toggleStartStop();
-                setPlaying(false);
-            }
-
         } else if (app === EDITOR) {
             appInstanceRef.current = new Editor({ canvas, dimensions, gridLines, initialState });
         }
 
-        return () => {
-            if (appInstanceRef.current?.cleanup) {
-                appInstanceRef.current.cleanup();
-            }
-        };
-    }, [app]);
+        setCustomInitialState(null);
+    };
 
-    const toggleGameStart = () => {
-        setPlaying(true);
-        const currentInstance = appInstanceRef.current;
-        currentInstance.toggleStartStop();
-        setPlaying(currentInstance.playing);
-    }
+    useEffect(() => {
+        createAppInstance(customInitialState);
+    }, [app, instanceTrigger]);
 
-    const toggleStart = (
-        app === EDITOR  ?  () => { setPlaying(true); setApp(GAME_OF_LIFE); }  : () => toggleGameStart()
-    );
+    useEffect( () => {
+        appInstanceRef.current.playing = playing; 
+    },  [ playing ] )
+
+    useEffect( () => {
+
+    }, [ customInitialState ] )
+
+
+    const toggleStart = app === EDITOR
+        ? () => { setPlaying(true); setApp(GAME_OF_LIFE); }
+        : () => setPlaying( !playing );
 
     const updateSpeed = (value) => {
         setSpeed(value);
@@ -70,33 +69,67 @@ function App() {
         setDimensions([rows, cols]);
     };
 
+    const createNewInstance = (initialState = null) => {
+        setCustomInitialState(initialState);
+        setInstanceTrigger((prev) => prev + 1);
+    };
+
+    const modifyState = () => {
+        setApp('editor');
+    }
+
+
+    const nextState = ( 
+        app === EDITOR 
+        ? () => { 
+            console.log( appInstanceRef.current)
+            setApp( GAME_OF_LIFE ); 
+            console.log( appInstanceRef.current );
+        } 
+        : (appInstanceRef?.current.nextState ? () => appInstanceRef?.current.nextState() : () => {})
+    );
+
+
+    const previousState = ( appInstanceRef?.current?.previousState ) ? () => appInstanceRef?.current?.previousState() : () => {};
+    const reset = ( appInstanceRef?.current?.reset ) ? () => appInstanceRef?.current?.reset() : () => {};
+
     return (
         <div className="App">
-            <AppSelector 
-                apps = { CONSTANTS.APPS_MAP } 
-                app = { app }
-                setApp = { setApp }
-                dimensions= { dimensions }
-                gridLines= { gridLines }
-                speed = { speed }
+            <AppSelector
+                apps={CONSTANTS.APPS_MAP}
+                app={app}
+                setApp={setApp}
+                dimensions={dimensions}
+                gridLines={gridLines}
+                speed={speed}
             />
-            <Canvas 
-                canvasRef = { canvasRef }
+            <Canvas
+                canvasRef={canvasRef}
             />
-
             <Playback
                 app={app}
+                appInstance={ appInstanceRef.current } 
                 playing={playing}
                 speed={speed}
                 setSpeed={updateSpeed}
+                setApp={ setApp }
                 toggleStart={toggleStart}
+                nextState= { nextState }
+                previousState = { previousState }
+                reset = { reset }
             />
-            <StateManager playing={playing} />
+            <StateManager 
+                playing={ playing }
+                createState= { createNewInstance }
+                modifyState={ modifyState }
+                dimensions={ dimensions }
+            />
             <SettingsControls
                 gridLines={gridLines}
                 setGridLines={setGridlines}
                 dimensions={dimensions}
                 setDimensions={updateDimensions}
+                createNewInstance={createNewInstance}
             />
         </div>
     );

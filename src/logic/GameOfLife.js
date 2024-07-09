@@ -98,7 +98,13 @@ class StateManager {
 
 // Handles the processing of playback on the `grid`
 class GameOfLife {
+
+    static random(size) {
+        return GameOfLifeMatrix.randomInitialState(size)?.matrix;
+    }
+
     static appname = 'gameoflife';
+
     #speed = 10;
     constructor( {initialState = 10 , canvas, speed, gridlines} = {} ) {
 
@@ -126,6 +132,18 @@ class GameOfLife {
 
     get playing() {
         return Number.isInteger(this.intervalId);
+    }
+
+    set playing(bool) {
+
+        if ( bool && !this.playing) {
+
+            this.start();
+
+        } else if ( !bool && this.playing ) {
+
+            this.stop();
+        }
     }
 
     get updateInterval() {
