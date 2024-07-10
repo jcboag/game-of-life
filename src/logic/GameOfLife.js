@@ -106,7 +106,7 @@ class GameOfLife {
     static appname = 'gameoflife';
 
     #speed = 10;
-    constructor( {initialState = 10 , canvas, speed, gridlines} = {} ) {
+    constructor( {initialState = 10 , canvas, speed, gridLines} = {} ) {
 
         if (!(Number.isInteger(initialState) || initialState.matrix || Matrix.isMatrixLike(initialState))) throw Error("Invalid initial state for Game Of Life");
 
@@ -114,7 +114,7 @@ class GameOfLife {
         this.speed = speed;
         this.intervalId = null;
         this.grid = new Grid(canvas);
-        this.initGrid(gridlines);
+        this.initGrid(gridLines);
     }
 
 
@@ -126,8 +126,8 @@ class GameOfLife {
         return [this.grid.rows, this.grid.columns]
     }
 
-    initGrid(gridlines) {
-        this.grid.init( { dimensions: this.stateManager.currentState.dimensions, gridlines, initialState: this.colorizedMatrix} );
+    initGrid(gridLines) {
+        this.grid.init( { dimensions: this.stateManager.currentState.dimensions, gridLines, initialState: this.colorizedMatrix} );
     }
 
     get playing() {
@@ -173,13 +173,13 @@ class GameOfLife {
         return Colorizer.monochrome(this.stateManager.currentState.matrix);
     }
 
-    set gridlines(bool) {
-        if ( typeof bool === 'boolean' ) this.grid.gridlines = bool;
+    set gridLines(bool) {
+        this.grid.gridLines = bool;
         this.render();
     }
 
-    get gridlines() {
-        return this.grid.gridlines
+    get gridLines() {
+        return this.grid.gridLines
     }
 
 

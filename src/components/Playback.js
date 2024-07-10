@@ -6,6 +6,7 @@ function Playback({ app, reset, nextState, previousState , playing, speed, setSp
 
 
     const back = app === GAME_OF_LIFE ? () => previousState() : null;
+
     const forward = app === GAME_OF_LIFE 
         ? () => nextState()
         : () => {

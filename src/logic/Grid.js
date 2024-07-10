@@ -107,20 +107,23 @@ class CanvasGridEngine {
 class Grid {
     constructor(el = document.querySelector('canvas')) {
         this.gridEngine = new CanvasGridEngine(el);
-        this.gridlines = true;
     }
 
-    init({ dimensions, gridlines = true, initialState }) {
+    init({ dimensions, initialState}) {
         [this.rows, this.columns] = dimensions;
         this.gridEngine.init(this.rows, this.columns);
-        this.gridlines = gridlines;
         this.render(initialState);
     }
 
     render(state) {
         this.clear();
+
         Matrix.forEach(state, (value, index) => this.setSquareColor(index, value));
-        if (this.gridlines) this.addGridLines();
+
+        if (this.gridLines) {
+            console.log( this.gridLines, 'has em' );
+            this.addGridLines();
+        }
     }
 
     clear() {

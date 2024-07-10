@@ -1,6 +1,15 @@
-function SettingsControls({ gridLines, setGridLines, dimensions, setDimensions }) {
+import { useState, useEffect } from 'react';
 
-    const [rows, cols] = dimensions;
+function SettingsControls({ gridLines, setGridLines, dimensions, setDimensions }) {
+    return ( 
+        <div>
+            <Dimensions dimensions={dimensions} setDimensions={setDimensions} />
+            <GridLines gridLines={gridLines} setGridLines={setGridLines} />
+        </div>
+    );
+}
+
+function GridLines({ gridLines, setGridLines }) {
 
     return (
         <div id="canvasProperties">
@@ -10,28 +19,42 @@ function SettingsControls({ gridLines, setGridLines, dimensions, setDimensions }
                     type="checkbox"
                     id="gridlines"
                     checked={gridLines}
-                    onChange={(e) => setGridLines(e.target.checked)}
+                    onChange={(e) => { console.log(1); setGridLines(e.target.checked)}}
                 />
             </div>
-            <div id="dimensions">
-                <div id="rows">
-                    <label htmlFor="mRows"># Rows</label>
-                    <input
-                        id="mRows"
-                        size="3"
-                        value={rows}
-                        onChange={(e) => setDimensions(Number(e.target.value), cols)}
-                    />
-                </div>
-                <div id="cols">
-                    <label htmlFor="nCols"># Cols</label>
-                    <input
-                        id="nCols"
-                        size="3"
-                        value={cols}
-                        onChange={(e) => setDimensions(rows, Number(e.target.value))}
-                    />
-                </div>
+        </div>
+    );
+}
+
+function Dimensions({ dimensions, setDimensions }) {
+
+    const [tempValue, setTempValue] = useState(dimensions);
+
+    useEffect(() => {
+        setTempValue(dimensions);
+    }, [dimensions]);
+
+    const handleChange = (e) => {
+        setTempValue(e.target.value);
+    };
+
+    const handleBlur = (e) => {
+        const [height, width] = e.target.value.split(',').slice(0,2).map( dim => parseInt(dim));
+        if ([ height, width ]) {
+            setDimensions([ height, width ]);
+        }
+    };
+
+    return (
+        <div id="dimensions">
+            <div id="rows">
+                <label htmlFor="rowsCols">Dimensions: </label>
+                <input
+                    type="text"
+                    value={tempValue}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                />
             </div>
         </div>
     );

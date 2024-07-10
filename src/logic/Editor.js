@@ -84,12 +84,12 @@ class EditorInputManager {
 class Editor {
     static appname = 'editor';
 
-    constructor({canvas, dimensions = null, initialState = null, gridlines = true}) {
+    constructor({canvas, dimensions = null, initialState = null, gridLines = true}) {
         this.canvas = canvas;
 
         initialState = this.getInitialMatrix(initialState, dimensions);
 
-        this.initGrid(initialState, gridlines);
+        this.initGrid(initialState, gridLines);
         this.handleInputStart = this.handleInputStart.bind(this);
         this.handleDrag = this.handleDrag.bind(this);
         this.inputManager = new EditorInputManager(
@@ -111,11 +111,11 @@ class Editor {
         return [this.grid.rows, this.grid.columns]
     }
 
-    initGrid(initialState,gridlines) {
+    initGrid(initialState,gridLines) {
         this.matrix = initialState;
         const dimensions = Matrix.getDimensions(this.matrix);
         this.grid = new Grid(this.canvas);
-        this.grid.init({dimensions, gridlines, initialState: this.matrix});
+        this.grid.init({dimensions, gridLines, initialState: this.matrix});
         this.render();
     }
 
@@ -165,13 +165,13 @@ class Editor {
         this.setSquareValue( square, value );
     }
 
-    set gridlines(bool) {
-        if (typeof bool === 'boolean') this.grid.gridlines = bool;
+    set gridLines(bool) {
+        if (typeof bool === 'boolean') this.grid.gridLines = bool;
         this.render();
     }
 
-    get gridlines() {
-        return this.grid.gridlines;
+    get gridLines() {
+        return this.grid.gridLines;
     }
 
     changeDimensions([m,n]) {
@@ -180,8 +180,8 @@ class Editor {
             (a,[i,j]) => ( i < m && j < n ) ? Matrix.getItem(this.matrix,[i,j]) : a
         );
 
-        const gridlines = this.gridlines;
-        this.initGrid(newMatrix, gridlines);
+        const gridLines = this.gridLines;
+        this.initGrid(newMatrix, gridLines);
     }
 
     cleanup() {

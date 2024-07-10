@@ -16,9 +16,10 @@ const { GLOBAL: { SPEED, GRIDLINES, DIMENSIONS } } = CONSTANTS.DEFAULTS;
 function App() {
     const [playing, setPlaying] = useState(false);
     const [speed, setSpeed] = useState(SPEED);
-    const [gridLines, setGridlines] = useState(GRIDLINES);
+    const [gridLines, setGridLines] = useState(GRIDLINES);
     const [dimensions, setDimensions] = useState(DIMENSIONS);
     const [app, setApp] = useState(EDITOR);
+
     const [instanceTrigger, setInstanceTrigger] = useState(0);
     const [customInitialState, setCustomInitialState] = useState(null);
 
@@ -31,7 +32,7 @@ function App() {
 
         if (prevInstance?.cleanup) prevInstance.cleanup();
 
-        initialState = initialState ?? prevInstance?.matrix;
+        initialState ??= prevInstance?.matrix;
 
         if (app === GAME_OF_LIFE) {
             initialState = initialState || dimensions[0];
@@ -40,21 +41,26 @@ function App() {
         } else if (app === EDITOR) {
             appInstanceRef.current = new Editor({ canvas, dimensions, gridLines, initialState });
         }
-
         setCustomInitialState(null);
     };
 
+
+    useEffect( () => {
+        createAppInstance();
+    }, [app] );
+
     useEffect(() => {
-        createAppInstance(customInitialState);
-    }, [app, instanceTrigger]);
+        const [ width, _ ] = dimensions;
+        createAppInstance( GameOfLife.random(width) );
+    }, [dimensions]);
 
     useEffect( () => {
         appInstanceRef.current.playing = playing; 
     },  [ playing ] )
 
-    useEffect( () => {
-
-    }, [ customInitialState ] )
+    useEffect(() => {
+        appInstanceRef.current.gridLines = gridLines;
+    });
 
 
     const toggleStart = app === EDITOR
@@ -63,10 +69,6 @@ function App() {
 
     const updateSpeed = (value) => {
         setSpeed(value);
-    };
-
-    const updateDimensions = (rows, cols) => {
-        setDimensions([rows, cols]);
     };
 
     const createNewInstance = (initialState = null) => {
@@ -81,12 +83,14 @@ function App() {
 
     const nextState = ( 
         app === EDITOR 
+
         ? () => { 
             console.log( appInstanceRef.current)
             setApp( GAME_OF_LIFE ); 
             console.log( appInstanceRef.current );
         } 
         : (appInstanceRef?.current.nextState ? () => appInstanceRef?.current.nextState() : () => {})
+
     );
 
 
@@ -105,6 +109,7 @@ function App() {
             />
             <Canvas
                 canvasRef={canvasRef}
+                dimensions={dimensions}
             />
             <Playback
                 app={app}
@@ -126,9 +131,9 @@ function App() {
             />
             <SettingsControls
                 gridLines={gridLines}
-                setGridLines={setGridlines}
+                setGridLines={setGridLines}
                 dimensions={dimensions}
-                setDimensions={updateDimensions}
+                setDimensions={setDimensions}
                 createNewInstance={createNewInstance}
             />
         </div>
