@@ -121,7 +121,6 @@ class Grid {
         Matrix.forEach(state, (value, index) => this.setSquareColor(index, value));
 
         if (this.gridLines) {
-            console.log( this.gridLines, 'has em' );
             this.addGridLines();
         }
     }

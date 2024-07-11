@@ -188,6 +188,11 @@ class Editor {
 
         this.inputManager.cleanup();
     }
+
+    clear() {
+        this.matrix = Matrix.getNullMatrix(...this.dimensions);
+        this.render();
+    }
 }
 
 export default Editor;

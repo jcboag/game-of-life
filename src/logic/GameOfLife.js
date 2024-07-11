@@ -230,6 +230,11 @@ class GameOfLife {
         return this.stateManager?.currentState?.matrix;
     }
 
+    cleanup() {
+
+        this.stop();
+    }
+
 }
 
 export default GameOfLife;

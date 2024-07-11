@@ -5,8 +5,8 @@ import StateManager from './components/StateManager';
 import SettingsControls from './components/SettingsControls';
 import AppSelector from './components/AppSelector';
 
+import Matrix from './logic/Matrix';
 import GameOfLife from './logic/GameOfLife';
-
 import Editor from './logic/Editor';
 
 import { CONSTANTS } from './constants';
@@ -20,8 +20,7 @@ function App() {
     const [dimensions, setDimensions] = useState(DIMENSIONS);
     const [app, setApp] = useState(EDITOR);
 
-    const [instanceTrigger, setInstanceTrigger] = useState(0);
-    const [customInitialState, setCustomInitialState] = useState(null);
+    const [ customInitialState, setCustomInitialState ] = useState(null);
 
     const canvasRef = useRef(null);
     const appInstanceRef = useRef(null);
@@ -41,17 +40,24 @@ function App() {
         } else if (app === EDITOR) {
             appInstanceRef.current = new Editor({ canvas, dimensions, gridLines, initialState });
         }
-        setCustomInitialState(null);
+
+        setCustomInitialState( null );
     };
 
-
     useEffect( () => {
+
+        if ( appInstanceRef?.current?.playing ) {
+            setPlaying(false);
+        }
+
         createAppInstance();
-    }, [app] );
+
+    }, [app, dimensions] );
 
     useEffect(() => {
         const [ width, _ ] = dimensions;
         createAppInstance( GameOfLife.random(width) );
+
     }, [dimensions]);
 
     useEffect( () => {
@@ -62,6 +68,14 @@ function App() {
         appInstanceRef.current.gridLines = gridLines;
     });
 
+    useEffect( () => {
+        if ( customInitialState ) {
+            createAppInstance( ( customInitialState === 0 ) ? Matrix.getNullMatrix( ...dimensions ) : customInitialState );
+            setCustomInitialState(null);
+        }
+    }, [ customInitialState ])
+
+
 
     const toggleStart = app === EDITOR
         ? () => { setPlaying(true); setApp(GAME_OF_LIFE); }
@@ -71,30 +85,22 @@ function App() {
         setSpeed(value);
     };
 
-    const createNewInstance = (initialState = null) => {
-        setCustomInitialState(initialState);
-        setInstanceTrigger((prev) => prev + 1);
-    };
-
     const modifyState = () => {
-        setApp('editor');
+        setApp(EDITOR);
     }
 
 
     const nextState = ( 
         app === EDITOR 
-
         ? () => { 
-            console.log( appInstanceRef.current)
             setApp( GAME_OF_LIFE ); 
-            console.log( appInstanceRef.current );
         } 
         : (appInstanceRef?.current.nextState ? () => appInstanceRef?.current.nextState() : () => {})
 
     );
 
-
     const previousState = ( appInstanceRef?.current?.previousState ) ? () => appInstanceRef?.current?.previousState() : () => {};
+
     const reset = ( appInstanceRef?.current?.reset ) ? () => appInstanceRef?.current?.reset() : () => {};
 
     return (
@@ -124,17 +130,21 @@ function App() {
                 reset = { reset }
             />
             <StateManager 
+                app={ app }
+                appInstanceRef={ appInstanceRef }
+                setApp={ setApp }
+                setCustomState={ setCustomInitialState }
                 playing={ playing }
-                createState= { createNewInstance }
+                createState= { createAppInstance }
                 modifyState={ modifyState }
                 dimensions={ dimensions }
+
             />
             <SettingsControls
                 gridLines={gridLines}
                 setGridLines={setGridLines}
                 dimensions={dimensions}
                 setDimensions={setDimensions}
-                createNewInstance={createNewInstance}
             />
         </div>
     );
