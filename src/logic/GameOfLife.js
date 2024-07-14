@@ -166,7 +166,7 @@ class GameOfLife {
 
     // Display the current state of the game on the grid
     render() {
-        this.grid.render( this.colorizedMatrix);
+        this.grid.render(this.colorizedMatrix);
     }
 
     get colorizedMatrix() {
@@ -231,7 +231,6 @@ class GameOfLife {
     }
 
     cleanup() {
-
         this.stop();
     }
 

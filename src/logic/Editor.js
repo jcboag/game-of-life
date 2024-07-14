@@ -90,6 +90,7 @@ class Editor {
         initialState = this.getInitialMatrix(initialState, dimensions);
 
         this.initGrid(initialState, gridLines);
+
         this.handleInputStart = this.handleInputStart.bind(this);
         this.handleDrag = this.handleDrag.bind(this);
         this.inputManager = new EditorInputManager(
@@ -101,7 +102,6 @@ class Editor {
         );
 
     }
-
 
     get appname() {
         return Editor.appname;

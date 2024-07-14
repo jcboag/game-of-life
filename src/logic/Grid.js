@@ -5,16 +5,13 @@ import Matrix from './Matrix';
 
 class CanvasGridEngine {
     #ctx;
-    constructor(canvasNode) {
+    constructor(canvasNode, [m,n]) {
         this.canvas = canvasNode;
         if (!this.canvas) throw Error("No canvas element found");
         this.#ctx = this.canvas.getContext('2d');
-    }
-
-    // Needs to be re initialized anytime the number of squares changes
-    init(m,n) {
         this.rows = m;
-        this.cols = n;
+        this.columns = n;
+
         this.originalHeight = this.canvas.height;
         this.originalWidth = this.canvas.width;
     }
@@ -37,11 +34,11 @@ class CanvasGridEngine {
 
     get squareWidth() {
         // squareWidth * numRowSquares = canvasWidth
-        return this.canvasWidth / this.cols
+        return this.canvasWidth / this.columns
     }
 
     get squareHeight() {
-        // squareHeight * numColSquares = canvafsHeight
+        // squareHeight * numcolumnsquares = canvafsHeight
         return this.canvasHeight / this.rows
 
     }
@@ -105,14 +102,17 @@ class CanvasGridEngine {
 // `Grid` can render matrices of hex/RGBA/color values
 
 class Grid {
-    constructor(el = document.querySelector('canvas')) {
-        this.gridEngine = new CanvasGridEngine(el);
-    }
 
-    init({ dimensions, initialState}) {
-        [this.rows, this.columns] = dimensions;
-        this.gridEngine.init(this.rows, this.columns);
-        this.render(initialState);
+    constructor({canvas = document.querySelector('canvas'), dimensions: [ rows, columns ], gridLines = true}) {
+
+        this.dimensions = [ rows, columns ];
+        this.gridEngine = new CanvasGridEngine(canvas, this.dimensions );
+
+        this.rows = rows;
+        this.columns = columns;
+
+        this.gridLines = gridLines;
+
     }
 
     render(state) {
@@ -172,5 +172,26 @@ class Grid {
         return this.gridEngine.squareHeight;
     }
 }
+
+
+// const monochrome = (m) => Matrix.map( m, (e) => e ? 'black' :  'white' );
+
+// document.addEventListener( 'DOMContentLoaded'  , () => {
+
+//     const el = document.querySelector('canvas');
+//     const dimensions = [10,10];
+    
+//     g = new Grid( { el, dimensions } );
+
+//     g.render(monochrome(
+//         Matrix.map(
+//             Matrix.getNullMatrix(10,10),
+//             (e) => 0.5 < Math.random() ? 0 : 1
+//         )
+//     ));
+
+
+// });
+
 
 export default Grid;
