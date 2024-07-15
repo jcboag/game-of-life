@@ -1,38 +1,9 @@
-import GameOfLife from '../logic/GameOfLife';
-import Editor from '../logic/Editor';
-
-import {CONSTANTS} from '../constants.js';
-
-const { EDITOR, GAME_OF_LIFE } = CONSTANTS.APPS;
-
-function StateManager( { app, setApp, setCustomState, appInstanceRef, createState, modifyState , dimensions} ) {
-
-    const createRandomState = () => {
-        const game = GameOfLife.random(dimensions[0]);
-        createState(game);
-    }
-
-    const newState = () => {
-
-        if ( app === EDITOR ) {
-
-            appInstanceRef.current.clear();
-        }
-
-        else {
-
-            setCustomState(0);
-
-        }
-
-
-    }
+function StateManager( {getRandomState, customizeState} ) {
 
     return (
         <div id="stateControl">
-            <button id="randomState" onClick={ () => createRandomState() }>Random State</button>
-            <button id="customState" onClick={ () => newState() }>New Custom State</button>
-            <button id="modifyState" onClick={ () => modifyState() }>Edit Current State</button>
+            <button id="randomState" onClick={ () =>  getRandomState()  }>Random State</button>
+            <button id="customizeState" onClick={ () => customizeState()  }>Edit Current State</button>
         </div>
     );
 }

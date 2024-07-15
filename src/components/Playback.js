@@ -2,23 +2,15 @@ import { CONSTANTS } from '../constants';
 
 const { GAME_OF_LIFE, EDITOR } = CONSTANTS.APPS;
 
-function Playback({ app, reset, nextState, previousState , playing, speed, setSpeed, toggleStart }) {
-
-
-    const back = app === GAME_OF_LIFE ? () => previousState() : null;
-
-    const forward = app === GAME_OF_LIFE 
-        ? () => nextState()
-        : () => {
-            nextState();
-    }
+function Playback({ reset, forward, back, playing, speed, setSpeed, toggleStart }) {
 
     return (
         <div className="playback">
-            <button onClick={ toggleStart }>{playing ? 'Stop' : 'Start'}</button>
-            <button id="rewind" onClick={ back }>Back</button>
-            <button id="forward" onClick={ forward }>Forward</button>
-            <button id="reset" onClick={ reset }>Reset</button>
+        {toggleStart && <button onClick={toggleStart}>{playing ? 'Stop' : 'Start'}</button>}
+        { back &&    <button id="back" onClick={ back }>Back</button> }
+        { forward && <button id="forward" onClick={ forward }>Forward</button> }
+        { reset &&    <button id="reset" onClick={ reset }>Reset</button> }
+        { speed && (
             <div id="playbackSpeed">
                 <label htmlFor="speed">Speed</label>
                 <input
@@ -29,7 +21,8 @@ function Playback({ app, reset, nextState, previousState , playing, speed, setSp
                     value={speed}
                     onChange={(e) => setSpeed(Number(e.target.value))}
                 />
-            </div>
+
+            </div>)}
         </div>
     );
 }

@@ -108,13 +108,17 @@ class GameOfLife {
     #speed = 10;
     constructor( {initialState = 10 , canvas, speed, gridLines} = {} ) {
 
-        if (!(Number.isInteger(initialState) || initialState.matrix || Matrix.isMatrixLike(initialState))) throw Error("Invalid initial state for Game Of Life");
+        initialState = Number.isInteger(initialState) ? GameOfLife.random(initialState) : initialState;
+
+        const dimensions = Matrix.getDimensions( initialState );
 
         this.stateManager = new StateManager( new GameOfLifeMatrix(initialState) );
+
         this.speed = speed;
         this.intervalId = null;
-        this.grid = new Grid(canvas);
-        this.initGrid(gridLines);
+
+        this.initGrid();
+
     }
 
 
@@ -127,7 +131,8 @@ class GameOfLife {
     }
 
     initGrid(gridLines) {
-        this.grid.init( { dimensions: this.stateManager.currentState.dimensions, gridLines, initialState: this.colorizedMatrix} );
+
+        this.grid = new Grid( { dimensions: this.stateManager.currentState.dimensions, gridLines, initialState: this.colorizedMatrix} );
     }
 
     get playing() {

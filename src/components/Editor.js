@@ -2,13 +2,22 @@ import React, { useRef, useState, useEffect } from 'react';
 import Grid from '../logic/Grid';
 import Matrix from '../logic/Matrix';
 import Colorizer from '../logic/Colorizer';
-import GameOfLife from '../logic/GameOfLife';
+
+import Playback from '../components/Playback';
 
 // class EditorMatrix extends Matrix {
 
 // }
 
-function Editor({ state, gridLines, dimensions }) {
+function Editor({ 
+    previousState, 
+    appStateRef, 
+    state, 
+    gridLines, 
+    dimensions, 
+    height, 
+    width, 
+    playback}) {
 
     const [dragging, setDragging] = useState(false);
     const gridRef = useRef(null);
@@ -16,6 +25,8 @@ function Editor({ state, gridLines, dimensions }) {
     const editorMatrix = useRef(null);
     const activeValue = useRef(null);
     const canvasRef = useRef(null);
+
+    appStateRef.current = editorMatrix.current?.matrix;
 
 //    const [color, setColor] = useState('black');
 
@@ -80,13 +91,25 @@ function Editor({ state, gridLines, dimensions }) {
         if (canvas) {
             const grid = new Grid({ el: canvas, dimensions, gridLines });
             gridRef.current = grid;
-            const initialState = state ?? GameOfLife.random(dimensions[0]);
+            const initialState = previousState ?? Matrix.getNullMatrix(...dimensions);
             editorMatrix.current = new Matrix(initialState);
+            appStateRef.current = editorMatrix.current.matrix;
             grid.render(Colorizer.monochrome(editorMatrix.current.matrix));
         }
     }, [canvasRef, dimensions, state]);
 
-    return <canvas ref={canvasRef} width="700" height="700" onMouseDown={handleMouseDown} onTouchStart={handleTouchStart} />;
+    useEffect( () => {
+        gridRef.current.gridLines = gridLines;
+        gridRef.current.render(Colorizer.monochrome(editorMatrix.current.matrix));
+
+    }, [gridLines])
+
+    return (
+        <div id="editor">
+            <canvas ref={canvasRef} width={`${height}`} height={`${width}`} onMouseDown={handleMouseDown} onTouchStart={handleTouchStart} />
+            { playback && <Playback toggleStart={ playback }/> }
+        </div>
+    )
 }
 
 export default Editor;
