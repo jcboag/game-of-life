@@ -17,6 +17,8 @@ export const CONSTANTS = {
             SPEED : 10,
             DIMENSIONS : [ 100, 100 ],
             GRIDLINES : true,
+            CANVAS_HEIGHT: 600,
+            CANVAS_WIDTH: 600,
         },
     }
 }

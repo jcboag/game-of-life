@@ -107,20 +107,14 @@ class GameOfLife {
 
     #speed = 10;
     constructor( {initialState = 10 , canvas, speed, gridLines} = {} ) {
-
         initialState = Number.isInteger(initialState) ? GameOfLife.random(initialState) : initialState;
-
-        const dimensions = Matrix.getDimensions( initialState );
-
+        this.canvas = canvas;
         this.stateManager = new StateManager( new GameOfLifeMatrix(initialState) );
-
         this.speed = speed;
         this.intervalId = null;
-
-        this.initGrid();
+        this.initGrid(gridLines);
 
     }
-
 
     get appname() {
         return GameOfLife.appname;
@@ -131,8 +125,7 @@ class GameOfLife {
     }
 
     initGrid(gridLines) {
-
-        this.grid = new Grid( { dimensions: this.stateManager.currentState.dimensions, gridLines, initialState: this.colorizedMatrix} );
+        this.grid = new Grid( { canvas: this.canvas,  dimensions: this.stateManager.currentState.dimensions, gridLines, initialState: this.colorizedMatrix} );
     }
 
     get playing() {
@@ -140,13 +133,9 @@ class GameOfLife {
     }
 
     set playing(bool) {
-
         if ( bool && !this.playing) {
-
             this.start();
-
         } else if ( !bool && this.playing ) {
-
             this.stop();
         }
     }

@@ -1,6 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useContext } from 'react';
+import {AppContext} from '../AppContext';
 
-function SettingsControls({ gridLines, setGridLines, dimensions, setDimensions }) {
+function SettingsControls() {
+
+    const { gridLines, setGridLines } = useContext(AppContext);
+    
     return ( 
         <div>
             <GridLines gridLines={gridLines} setGridLines={setGridLines} />

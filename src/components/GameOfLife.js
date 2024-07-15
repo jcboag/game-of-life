@@ -1,18 +1,19 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect , useContext} from 'react';
 import Playback from '../components/Playback';
 import StateManager from '../components/StateManager';
 import GameOfLife from '../logic/GameOfLife';
 
-function GameOfLifeComp({
-    previousState, 
-    appStateRef, 
-    state, 
-    gridLines, 
-    dimensions, 
-    height, 
-    width, 
-    editState, 
-    playOnStartRef}) {
+import { AppContext } from '../AppContext';
+
+function GameOfLifeComp() {
+
+    const {
+        state, 
+        gridLines, 
+        dimensions, 
+        height, 
+        width, 
+    } = useContext(AppContext);
 
     const canvasRef = useRef( null );
     const gameRef = useRef(null);
@@ -20,32 +21,18 @@ function GameOfLifeComp({
     const [playing, setPlaying ] = useState(null);
 
     function setNewState( { initialState }) {
-
         const canvas = canvasRef.current;
         if (canvas) {
-
             if ( gameRef.current ) {
                 gameRef.current.cleanup();
             }
-
             gameRef.current = new GameOfLife({ canvas, initialState, speed ,gridLines});
-
-            appStateRef.current = gameRef.current?.currentState;
-
             gameRef.current.render();
-
-            setPlaying( () => {
-                const play = playOnStartRef.current === true ? true : false;
-                playOnStartRef.current = false;
-                return play;
-            });
         }
-
-
     }
 
     useEffect(() => {
-        const initialState = previousState ?? GameOfLife.random( dimensions[0]);
+        const initialState = GameOfLife.random( dimensions[0]);
         setNewState( { initialState } );
 
     }, [gameRef, canvasRef, dimensions, state]);
@@ -89,11 +76,6 @@ function GameOfLifeComp({
         setNewState( { initialState } )
     }
 
-    function customizeState() {
-
-        editState( gameRef.current.currentState );
-    }
-
     return (
         <div id="gameoflife">
             <canvas 
@@ -115,7 +97,6 @@ function GameOfLifeComp({
             />
 
             <StateManager 
-                customizeState={ customizeState }
                 getRandomState={ getRandomState }
             />
 

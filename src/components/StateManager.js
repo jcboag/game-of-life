@@ -1,9 +1,9 @@
-function StateManager( {getRandomState, customizeState} ) {
+function StateManager( {getRandomState = null, customizeState = null} ) {
 
     return (
         <div id="stateControl">
-            <button id="randomState" onClick={ () =>  getRandomState()  }>Random State</button>
-            <button id="customizeState" onClick={ () => customizeState()  }>Edit Current State</button>
+            { getRandomState && <button id="randomState" onClick={ () =>  getRandomState()  }>Random State</button> }
+            { customizeState && <button id="customizeState" onClick={ () => customizeState()  }>Edit Current State</button> }
         </div>
     );
 }

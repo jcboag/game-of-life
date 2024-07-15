@@ -1,23 +1,23 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect , useContext} from 'react';
 import Grid from '../logic/Grid';
 import Matrix from '../logic/Matrix';
 import Colorizer from '../logic/Colorizer';
 
+import { AppContext } from '../AppContext';
+
 import Playback from '../components/Playback';
 
-// class EditorMatrix extends Matrix {
+function Editor() {
 
-// }
+    const { 
+        state, 
+        gridLines, 
+        dimensions, 
+        height, 
+        width, 
+        playback ,
+    } = useContext(AppContext);
 
-function Editor({ 
-    previousState, 
-    appStateRef, 
-    state, 
-    gridLines, 
-    dimensions, 
-    height, 
-    width, 
-    playback}) {
 
     const [dragging, setDragging] = useState(false);
     const gridRef = useRef(null);
@@ -25,8 +25,6 @@ function Editor({
     const editorMatrix = useRef(null);
     const activeValue = useRef(null);
     const canvasRef = useRef(null);
-
-    appStateRef.current = editorMatrix.current?.matrix;
 
 //    const [color, setColor] = useState('black');
 
@@ -91,10 +89,10 @@ function Editor({
         if (canvas) {
             const grid = new Grid({ el: canvas, dimensions, gridLines });
             gridRef.current = grid;
-            const initialState = previousState ?? Matrix.getNullMatrix(...dimensions);
+            const initialState = Matrix.getNullMatrix(...dimensions);
             editorMatrix.current = new Matrix(initialState);
-            appStateRef.current = editorMatrix.current.matrix;
             grid.render(Colorizer.monochrome(editorMatrix.current.matrix));
+
         }
     }, [canvasRef, dimensions, state]);
 
