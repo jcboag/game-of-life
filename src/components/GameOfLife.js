@@ -11,6 +11,7 @@ function GameOfLifeComp() {
         state, 
         gridLines, 
         dimensions, 
+        setDimensions,
         height, 
         width, 
     } = useContext(AppContext);
@@ -74,6 +75,10 @@ function GameOfLifeComp() {
     function getRandomState() {
         const initialState = GameOfLife.random( dimensions[0] );
         setNewState( { initialState } )
+    }
+
+    function getStateWithNewDimensions([w,h]) {
+        setDimensions([w,h]);
     }
 
     return (

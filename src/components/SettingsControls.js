@@ -1,13 +1,14 @@
-import { useContext } from 'react';
+import {useState, useEffect, useContext } from 'react';
 import {AppContext} from '../AppContext';
 
 function SettingsControls() {
 
-    const { gridLines, setGridLines } = useContext(AppContext);
+    const { gridLines, setGridLines , dimensions, setDimensions} = useContext(AppContext);
     
     return ( 
-        <div>
+        <div id="settingsControls">
             <GridLines gridLines={gridLines} setGridLines={setGridLines} />
+            <Dimensions dimensions={dimensions} setDimensions={setDimensions} />
         </div>
     );
 }
@@ -29,38 +30,38 @@ function GridLines({ gridLines, setGridLines }) {
     );
 }
 
-// function Dimensions({ dimensions, setDimensions }) {
+function Dimensions({ dimensions, setDimensions }) {
 
-//     const [tempValue, setTempValue] = useState(dimensions);
+    const [tempValue, setTempValue] = useState(dimensions);
 
-//     useEffect(() => {
-//         setTempValue(dimensions);
-//     }, [dimensions]);
+    useEffect(() => {
+        setTempValue(dimensions);
+    }, [dimensions]);
 
-//     const handleChange = (e) => {
-//         setTempValue(e.target.value);
-//     };
+    const handleChange = (e) => {
+        setTempValue(e.target.value);
+    };
 
-//     const handleBlur = (e) => {
-//         const [height, width] = e.target.value.split(',').slice(0,2).map( dim => parseInt(dim));
-//         if ([ height, width ]) {
-//             setDimensions([ height, width ]);
-//         }
-//     };
+    const handleBlur = (e) => {
+        const [height, width] = e.target.value.split(',').slice(0,2).map( dim => parseInt(dim));
+        if ([ height, width ]) {
+            setDimensions([ height, width ]);
+        }
+    };
 
-//     return (
-//         <div id="dimensions">
-//             <div id="rows">
-//                 <label htmlFor="rowsCols">Dimensions: </label>
-//                 <input
-//                     type="text"
-//                     value={tempValue}
-//                     onChange={handleChange}
-//                     onBlur={handleBlur}
-//                 />
-//             </div>
-//         </div>
-//     );
-// }
+    return (
+        <div id="dimensions">
+            <div id="rows">
+                <label htmlFor="rowsCols">Dimensions: </label>
+                <input
+                    type="text"
+                    value={tempValue}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                />
+            </div>
+        </div>
+    );
+}
 
 export default SettingsControls;
