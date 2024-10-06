@@ -1,37 +1,56 @@
-import React, { createContext, useState, useRef, useCallback } from 'react';
-
+import React, { createContext, useReducer, useCallback, useRef } from 'react';
 import { CONSTANTS } from './constants';
-const { GAME_OF_LIFE, EDITOR } = CONSTANTS.APPS;
-const { GLOBAL: { GRIDLINES, DIMENSIONS , CANVAS_HEIGHT, CANVAS_WIDTH} } = CONSTANTS.DEFAULTS;
+import Matrix from './logic/Matrix';
 
 const AppContext = createContext();
 
+const { GAME_OF_LIFE, EDITOR } = CONSTANTS.APPS;
+const { GLOBAL: { GRIDLINES, DIMENSIONS, CANVAS_HEIGHT, CANVAS_WIDTH } } = CONSTANTS.DEFAULTS;
+
+const initialAppState = {
+    app: GAME_OF_LIFE,
+    gridLines: GRIDLINES,
+    dimensions: DIMENSIONS,
+    height: CANVAS_HEIGHT,
+    width: CANVAS_WIDTH,
+    stateMatrix: Matrix.getNullMatrix(...DIMENSIONS),
+    states: [],
+};
+
+function appStateReducer(state, action) {
+    switch (action.type) {
+        case 'CHANGE_APP':
+            return { ...state, app: action.app };
+        case 'SET_GRIDLINES':
+            return { ...state, gridLines: action.gridLines };
+        case 'SET_DIMENSIONS':
+            return { ...state, dimensions: action.dimensions };
+        case 'SET_HEIGHT':
+            return { ...state, height: action.height };
+        case 'SET_WIDTH':
+            return { ...state, width: action.width };
+        case 'SET_STATE_MATRIX':
+            // Save past states
+            state.states.push(state.stateMatrix);
+            return { ...state, stateMatrix: action.stateMatrix };
+        default:
+            return state;
+    }
+}
+
 const AppProvider = ({ children }) => {
-    const [app, setApp] = useState(GAME_OF_LIFE);
+    const [state, dispatch] = useReducer(appStateReducer, initialAppState);
     const lastApp = useRef(null);
 
-    const [gridLines, setGridLines] = useState(GRIDLINES);
-    const [dimensions, setDimensions] = useState(DIMENSIONS);
-    const [height, setHeight] = useState(CANVAS_HEIGHT);
-    const [width, setWidth] = useState(CANVAS_WIDTH);
-
     const changeApp = useCallback((nextApp) => {
-        lastApp.current = app;
-        setApp(nextApp);
-    }, [app]);
+        lastApp.current = state.app;
+        dispatch({ type: 'CHANGE_APP', app: nextApp });
+    }, [state.app]);
 
     const value = {
-        app,
-        setApp: changeApp,
-        lastApp,
-        gridLines,
-        setGridLines,
-        dimensions,
-        setDimensions,
-        height,
-        setHeight,
-        width,
-        setWidth,
+        state,
+        dispatch,
+        changeApp,
         CONSTANTS,
         EDITOR,
         GAME_OF_LIFE,
@@ -41,7 +60,7 @@ const AppProvider = ({ children }) => {
         <AppContext.Provider value={value}>
             {children}
         </AppContext.Provider>
-    )
+    );
 };
 
 export { AppContext, AppProvider };

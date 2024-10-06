@@ -1,64 +1,50 @@
-import {useState, useEffect, useContext } from 'react';
-import {AppContext} from '../AppContext';
+import React, { useState, useEffect, useContext } from 'react';
+import { AppContext } from '../AppContext';
 
 function SettingsControls() {
-
-    const { gridLines, setGridLines , dimensions, setDimensions} = useContext(AppContext);
-    
-    return ( 
-        <div id="settingsControls">
-            <GridLines gridLines={gridLines} setGridLines={setGridLines} />
-            <Dimensions dimensions={dimensions} setDimensions={setDimensions} />
-        </div>
-    );
-}
-
-function GridLines({ gridLines, setGridLines }) {
-
-    return (
-        <div id="canvasProperties">
-            <div id="gridlines">
-                <label htmlFor="gridlines">Gridlines</label>
-                <input
-                    type="checkbox"
-                    id="gridlines"
-                    checked={gridLines}
-                    onChange={(e) => { setGridLines(e.target.checked)}}
-                />
-            </div>
-        </div>
-    );
-}
-
-function Dimensions({ dimensions, setDimensions }) {
-
-    const [tempValue, setTempValue] = useState(dimensions);
+    const { state: { gridLines, dimensions }, dispatch } = useContext(AppContext);
+    const [tempDimensions, setTempDimensions] = useState(dimensions);
 
     useEffect(() => {
-        setTempValue(dimensions);
+        setTempDimensions(dimensions);
     }, [dimensions]);
 
-    const handleChange = (e) => {
-        setTempValue(e.target.value);
+    const handleGridLinesChange = (e) => {
+        dispatch({ type: 'SET_GRIDLINES', gridLines: e.target.checked });
     };
 
-    const handleBlur = (e) => {
-        const [height, width] = e.target.value.split(',').slice(0,2).map( dim => parseInt(dim));
-        if ([ height, width ]) {
-            setDimensions([ height, width ]);
+    const handleDimensionsChange = (e) => {
+        setTempDimensions(e.target.value);
+    };
+
+    const handleDimensionsBlur = () => {
+        const [height, width] = tempDimensions.split(',').map(dim => parseInt(dim));
+        if (height && width) {
+            dispatch({ type: 'SET_DIMENSIONS', dimensions: [height, width] });
         }
     };
 
     return (
-        <div id="dimensions">
-            <div id="rows">
-                <label htmlFor="rowsCols">Dimensions: </label>
-                <input
-                    type="text"
-                    value={tempValue}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                />
+        <div id="settingsControls">
+            <div id="canvasProperties">
+                <div id="gridlines">
+                    <label htmlFor="gridlines">Gridlines</label>
+                    <input
+                        type="checkbox"
+                        id="gridlines"
+                        checked={gridLines}
+                        onChange={handleGridLinesChange}
+                    />
+                </div>
+                <div id="dimensions">
+                    <label htmlFor="dimensions">Dimensions: </label>
+                    <input
+                        type="text"
+                        value={tempDimensions}
+                        onChange={handleDimensionsChange}
+                        onBlur={handleDimensionsBlur}
+                    />
+                </div>
             </div>
         </div>
     );

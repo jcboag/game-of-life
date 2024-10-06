@@ -1,8 +1,5 @@
 import Matrix from './Matrix';
 
-// The `GridEngine` is responsible for the lower level details of the grid,
-// While the `Grid` itself only deals with `squares`.
-
 class CanvasGridEngine {
     #ctx;
     constructor(canvasNode, [m,n]) {

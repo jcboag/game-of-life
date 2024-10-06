@@ -5,16 +5,14 @@ import GameOfLife from '../logic/GameOfLife';
 import { AppContext } from '../AppContext';
 
 function GameOfLifeComp() {
-    const { gridLines, dimensions, height, width } = useContext(AppContext);
+    const { state: { gridLines, dimensions, height, width, stateMatrix }, dispatch } = useContext(AppContext);
+    const [speed, setSpeed] = useState(10);
+    const [playing, setPlaying] = useState(false);
+
     const canvasRef = useRef(null);
     const gameRef = useRef(null);
-    const [speed, setSpeed] = useState(10);
-    const [playing, setPlaying] = useState(null);
 
-    const setNewState = (initialState) => {
-
-        initialState ??=  GameOfLife.random(dimensions[0]);
-
+    const setNewState = (initialState = GameOfLife.random(dimensions[0])) => {
         const canvas = canvasRef.current;
         if (canvas) {
             if (gameRef.current) {
@@ -22,12 +20,13 @@ function GameOfLifeComp() {
             }
             gameRef.current = new GameOfLife({ canvas, initialState, speed, gridLines });
             gameRef.current.render();
+            dispatch({ type: 'SET_STATE_MATRIX', stateMatrix: gameRef.current.currentState } );
         }
     };
 
     useEffect(() => {
-        setNewState();
-    }, [gameRef, canvasRef, dimensions ]);
+        setNewState(stateMatrix);
+    }, [canvasRef, dimensions]);
 
     useEffect(() => {
         if (gameRef.current) {
@@ -50,25 +49,29 @@ function GameOfLifeComp() {
     const forward = () => {
         setPlaying(false);
         gameRef.current.nextState();
+        dispatch({ type: 'SET_STATE_MATRIX', stateMatrix: gameRef.current.currentState });
     };
 
     const back = () => {
         setPlaying(false);
         gameRef.current.previousState();
+        dispatch({ type: 'SET_STATE_MATRIX', stateMatrix: gameRef.current.currentState });
     };
 
     const reset = () => {
         setPlaying(false);
         gameRef.current.reset();
+        dispatch({ type: 'SET_STATE_MATRIX', stateMatrix: gameRef.current.currentState });
     };
 
     const toggleStart = () => {
         setPlaying(!playing);
+        dispatch({ type: 'SET_STATE_MATRIX', stateMatrix: gameRef.current.currentState });
     };
 
     return (
         <div id="gameoflife">
-            <canvas ref={canvasRef} height={`${height}`} width={`${width}`} onClick={toggleStart} />
+            <canvas ref={canvasRef} height={height} width={width} onClick={toggleStart} />
             <Playback
                 toggleStart={toggleStart}
                 forward={forward}
@@ -79,7 +82,7 @@ function GameOfLifeComp() {
                 playing={playing}
                 setPlaying={setPlaying}
             />
-            <StateManager getRandomState={ () => setNewState() } />
+            <StateManager getRandomState={() => setNewState()} />
         </div>
     );
 }

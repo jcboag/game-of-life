@@ -99,6 +99,11 @@ class StateManager {
 // Handles the processing of playback on the `grid`
 class GameOfLife {
 
+    static addGlider(stateMatrix, [i,j])  {
+        const GLIDER = [ [0,1,0],[0,0,1],[1,1,1] ];
+        Matrix.setItem( stateMatrix, [i,j],  GLIDER  );
+    }
+
     static random(size) {
         return GameOfLifeMatrix.randomInitialState(size)?.matrix;
     }
@@ -229,5 +234,7 @@ class GameOfLife {
     }
 
 }
+
+
 
 export default GameOfLife;
